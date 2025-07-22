@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('jenis_tabungs', function (Blueprint $table) {
+        Schema::create('jenis_tabungs', function (Blueprint $table) {
             $table->id('id_jenis_tabung');
-            $table->string('nama_jenis');
-            $table->decimal('harga_sewa', 10, 2);
-            $table->decimal('harga_isi_gas', 10, 2);
-            $table->decimal('nilai_deposit', 10, 2);
+            $table->string('nama_jenis')->unique();
+            $table->decimal('harga_pinjam', 15, 2)->default(0)->comment('Harga sewa tabung jika ada');
+            $table->decimal('harga_isi_ulang', 15, 2);
+            $table->decimal('nilai_deposit', 15, 2)->comment('Jumlah jaminan yang diperlukan untuk meminjam');
             $table->timestamps();
         });
     }

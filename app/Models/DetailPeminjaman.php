@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Pengembalian extends Model
+class DetailPeminjaman extends Model
 {
     use HasFactory;
 
@@ -14,14 +14,14 @@ class Pengembalian extends Model
      *
      * @var string
      */
-    protected $table = 'pengembalians';
+    protected $table = 'detail_peminjamans';
 
     /**
      * Kunci utama untuk model.
      *
      * @var string
      */
-    protected $primaryKey = 'id_pengembalian';
+    protected $primaryKey = 'id_detail_peminjaman';
 
     /**
      * Atribut yang dapat diisi secara massal.
@@ -30,21 +30,13 @@ class Pengembalian extends Model
      */
     protected $fillable = [
         'id_peminjaman',
-        'tanggal_kembali',
-    ];
-
-    /**
-     * Atribut yang harus di-cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'tanggal_kembali' => 'datetime',
+        'id_tabung',
+        'harga_pinjam_saat_itu',
     ];
 
     /**
      * Mendefinisikan relasi belongs-to ke model Peminjaman.
-     * Setiap pengembalian terkait dengan satu peminjaman.
+     * Setiap detail adalah bagian dari satu peminjaman.
      */
     public function peminjaman()
     {
@@ -52,10 +44,11 @@ class Pengembalian extends Model
     }
 
     /**
-     * Mendefinisikan relasi has-many ke model DetailPengembalian.
+     * Mendefinisikan relasi belongs-to ke model Tabung.
+     * Setiap detail merujuk pada satu tabung spesifik.
      */
-    public function detailPengembalians()
+    public function tabung()
     {
-        return $this->hasMany(DetailPengembalian::class, 'id_pengembalian');
+        return $this->belongsTo(Tabung::class, 'id_tabung');
     }
 }

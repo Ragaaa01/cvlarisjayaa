@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('status_transaksis', function (Blueprint $table) {
-            $table->id('id_status_transaksi');
-            $table->string('status_transaksi');
+        Schema::create('notifikasi_templates', function (Blueprint $table) {
+            $table->id('id_notifikasi_template');
+            $table->string('nama_template')->unique();
+            $table->integer('hari_set')->nullable();
+            $table->string('judul');
+            $table->text('isi');
             $table->timestamps();
         });
     }
@@ -23,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('status_transaksis');
+        Schema::dropIfExists('notifikasi_templates');
     }
 };

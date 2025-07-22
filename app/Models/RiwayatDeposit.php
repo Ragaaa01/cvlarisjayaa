@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PembayaranTagihan extends Model
+class RiwayatDeposit extends Model
 {
     use HasFactory;
 
@@ -14,14 +14,14 @@ class PembayaranTagihan extends Model
      *
      * @var string
      */
-    protected $table = 'pembayaran_tagihans';
+    protected $table = 'riwayat_deposits';
 
     /**
      * Kunci utama untuk model.
      *
      * @var string
      */
-    protected $primaryKey = 'id_pembayaran_tagihan';
+    protected $primaryKey = 'id_riwayat_deposit';
 
     /**
      * Atribut yang dapat diisi secara massal.
@@ -29,10 +29,11 @@ class PembayaranTagihan extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'id_tagihan',
-        'jumlah_dibayar',
-        'tanggal_bayar',
-        'metode_pembayaran',
+        'id_deposit',
+        'jenis_aktivitas',
+        'jumlah',
+        'keterangan',
+        'waktu_aktivitas',
     ];
 
     /**
@@ -41,15 +42,15 @@ class PembayaranTagihan extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'tanggal_bayar' => 'datetime',
+        'waktu_aktivitas' => 'datetime',
     ];
 
     /**
-     * Mendefinisikan relasi belongs-to ke model Tagihan.
-     * Setiap pembayaran adalah bagian dari satu tagihan.
+     * Mendefinisikan relasi belongs-to ke model Deposit.
+     * Setiap riwayat adalah bagian dari satu dompet deposit.
      */
-    public function tagihan()
+    public function deposit()
     {
-        return $this->belongsTo(Tagihan::class, 'id_tagihan');
+        return $this->belongsTo(Deposit::class, 'id_deposit');
     }
 }

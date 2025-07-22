@@ -8,16 +8,48 @@ use Illuminate\Database\Eloquent\Model;
 class Denda extends Model
 {
     use HasFactory;
-     protected $primaryKey = 'id_denda';
-    protected $fillable = ['id_peminjaman', 'id_tagihan', 'jumlah_denda', 'periode_denda'];
 
+    /**
+     * Nama tabel yang terhubung dengan model.
+     *
+     * @var string
+     */
+    protected $table = 'dendas';
+
+    /**
+     * Kunci utama untuk model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id_denda';
+
+    /**
+     * Atribut yang dapat diisi secara massal.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'id_peminjaman',
+        'id_akun',
+        'jenis_denda',
+        'jumlah_denda',
+    ];
+
+    /**
+     * Mendefinisikan relasi belongs-to ke model Peminjaman.
+     * Setiap denda disebabkan oleh satu peminjaman.
+     */
     public function peminjaman()
     {
         return $this->belongsTo(Peminjaman::class, 'id_peminjaman');
     }
 
-    public function tagihan()
+    /**
+     * Mendefinisikan relasi belongs-to ke model Akun.
+     * Setiap denda dibebankan kepada satu akun.
+     */
+    public function akun()
     {
-        return $this->belongsTo(Tagihan::class, 'id_tagihan');
+        return $this->belongsTo(Akun::class, 'id_akun');
     }
 }
