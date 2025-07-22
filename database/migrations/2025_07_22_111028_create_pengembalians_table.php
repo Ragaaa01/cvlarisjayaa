@@ -11,9 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('status_tabungs', function (Blueprint $table) {
-            $table->id('id_status_tabung');
-            $table->string('status_tabung');
+        Schema::create('pengembalians', function (Blueprint $table) {
+            $table->id('id_pengembalian');
+
+            // Foreign key ke tabel peminjamans
+            $table->foreignId('id_peminjaman')->constrained('peminjamans', 'id_peminjaman');
+
+            $table->timestamp('tanggal_kembali')->useCurrent();
+
             $table->timestamps();
         });
     }
@@ -23,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('status_tabungs');
+        Schema::dropIfExists('pengembalians');
     }
 };

@@ -8,16 +8,47 @@ use Illuminate\Database\Eloquent\Model;
 class Deposit extends Model
 {
     use HasFactory;
-    protected $primaryKey = 'id_deposit';
-    protected $fillable = ['id_peminjaman', 'id_perorangan', 'jumlah_deposit', 'status_deposit'];
 
-    public function peminjaman()
+    /**
+     * Nama tabel yang terhubung dengan model.
+     *
+     * @var string
+     */
+    protected $table = 'deposits';
+
+    /**
+     * Kunci utama untuk model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id_deposit';
+
+    /**
+     * Atribut yang dapat diisi secara massal.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'id_akun',
+        'saldo',
+        'status_deposit',
+    ];
+
+    /**
+     * Mendefinisikan relasi belongs-to ke model Akun.
+     * Setiap dompet deposit dimiliki oleh satu akun.
+     */
+    public function akun()
     {
-        return $this->belongsTo(Peminjaman::class, 'id_peminjaman');
+        return $this->belongsTo(Akun::class, 'id_akun');
     }
 
-    public function perorangan()
+    /**
+     * Mendefinisikan relasi has-many ke model RiwayatDeposit.
+     * Satu dompet deposit memiliki banyak riwayat mutasi.
+     */
+    public function riwayatDeposits()
     {
-        return $this->belongsTo(Perorangan::class, 'id_perorangan');
+        return $this->hasMany(RiwayatDeposit::class, 'id_deposit');
     }
 }

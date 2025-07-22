@@ -13,10 +13,17 @@ return new class extends Migration
     {
         Schema::create('peminjamans', function (Blueprint $table) {
             $table->id('id_peminjaman');
-            $table->foreignId('id_detail_transaksi')->constrained('detail_transaksis', 'id_detail_transaksi')->onDelete('cascade');
-            $table->date('tanggal_pinjam');
-            $table->date('tanggal_aktivitas_terakhir');
-            $table->boolean('status_pinjam')->default(true);
+
+            // Foreign key ke tabel akuns
+            $table->foreignId('id_akun')->constrained('akuns', 'id_akun');
+
+            // Foreign key ke tagihan (untuk biaya sewa awal jika ada)
+            $table->foreignId('id_tagihan')->nullable()->constrained('tagihans', 'id_tagihan');
+
+            $table->timestamp('tanggal_pinjam')->useCurrent();
+            $table->timestamp('tanggal_aktivitas_terakhir')->nullable();
+            $table->boolean('status_pinjam')->default(true)->comment('true=aktif, false=selesai');
+
             $table->timestamps();
         });
     }

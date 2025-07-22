@@ -8,16 +8,38 @@ use Illuminate\Database\Eloquent\Model;
 class Perusahaan extends Model
 {
     use HasFactory;
+
+    /**
+     * Nama tabel yang terhubung dengan model.
+     *
+     * @var string
+     */
+    protected $table = 'perusahaans';
+
+    /**
+     * Kunci utama untuk model.
+     *
+     * @var string
+     */
     protected $primaryKey = 'id_perusahaan';
-    protected $fillable = ['nama_perusahaan', 'alamat_perusahaan'];
 
-    public function perorangans()
-    {
-        return $this->hasMany(Perorangan::class, 'id_perusahaan');
-    }
+    /**
+     * Atribut yang dapat diisi secara massal.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'nama_perusahaan',
+        'alamat_perusahaan',
+    ];
 
-    public function transaksis()
+    /**
+     * Mendefinisikan relasi many-to-many ke model Orang.
+     */
+    public function orangs()
     {
-        return $this->hasMany(Transaksi::class, 'id_perusahaan');
+        return $this->belongsToMany(Orang::class, 'orang_perusahaans', 'id_perusahaan', 'id_orang')
+            ->withPivot('status') // Mengambil kolom 'status' dari tabel pivot
+            ->withTimestamps();
     }
 }

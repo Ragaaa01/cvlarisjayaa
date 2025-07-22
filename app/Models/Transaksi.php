@@ -8,8 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 class Transaksi extends Model
 {
     use HasFactory;
+    protected $table = 'transaksis';
     protected $primaryKey = 'id_transaksi';
-    protected $fillable = ['id_akun', 'id_perorangan', 'id_perusahaan', 'id_tagihan', 'total_transaksi', 'id_status_transaksi', 'tanggal_transaksi', 'waktu_transaksi'];
+    protected $fillable = [
+        'id_akun',
+        'id_perorangan',
+        'id_perusahaan',
+        'id_tagihan',
+        'total_transaksi',
+        'id_status_transaksi',
+        'tanggal_transaksi',
+        'waktu_transaksi'
+    ];
 
     public function akun()
     {

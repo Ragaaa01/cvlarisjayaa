@@ -14,8 +14,13 @@ return new class extends Migration
         Schema::create('tabungs', function (Blueprint $table) {
             $table->id('id_tabung');
             $table->string('kode_tabung')->unique();
-            $table->foreignId('id_jenis_tabung')->constrained('jenis_tabungs', 'id_jenis_tabung')->onDelete('cascade');
-            $table->foreignId('id_status_tabung')->constrained('status_tabungs', 'id_status_tabung')->onDelete('cascade');
+
+            // Foreign key ke tabel jenis_tabungs
+            $table->foreignId('id_jenis_tabung')->constrained('jenis_tabungs', 'id_jenis_tabung');
+
+            // Foreign key ke tabel status_tabungs
+            $table->foreignId('id_status_tabung')->constrained('status_tabungs', 'id_status_tabung');
+
             $table->timestamps();
         });
     }

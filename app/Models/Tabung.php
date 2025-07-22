@@ -8,21 +8,54 @@ use Illuminate\Database\Eloquent\Model;
 class Tabung extends Model
 {
     use HasFactory;
-     protected $primaryKey = 'id_tabung';
-    protected $fillable = ['kode_tabung', 'id_jenis_tabung', 'id_status_tabung'];
 
+    /**
+     * Nama tabel yang terhubung dengan model.
+     *
+     * @var string
+     */
+    protected $table = 'tabungs';
+
+    /**
+     * Kunci utama untuk model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id_tabung';
+
+    /**
+     * Atribut yang dapat diisi secara massal.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'kode_tabung',
+        'id_jenis_tabung',
+        'id_status_tabung',
+    ];
+
+    /**
+     * Mendefinisikan relasi belongs-to ke model JenisTabung.
+     */
     public function jenisTabung()
     {
         return $this->belongsTo(JenisTabung::class, 'id_jenis_tabung');
     }
 
+    /**
+     * Mendefinisikan relasi belongs-to ke model StatusTabung.
+     */
     public function statusTabung()
     {
         return $this->belongsTo(StatusTabung::class, 'id_status_tabung');
     }
 
-    public function detailTransaksis()
+    /**
+     * Mendefinisikan relasi has-many ke model DetailPeminjaman.
+     * Satu tabung bisa memiliki banyak riwayat peminjaman.
+     */
+    public function detailPeminjamans()
     {
-        return $this->hasMany(DetailTransaksi::class, 'id_tabung');
+        return $this->hasMany(DetailPeminjaman::class, 'id_tabung');
     }
 }

@@ -13,10 +13,16 @@ return new class extends Migration
     {
         Schema::create('dendas', function (Blueprint $table) {
             $table->id('id_denda');
-            $table->foreignId('id_peminjaman')->constrained('peminjamans', 'id_peminjaman')->onDelete('cascade');
-            $table->foreignId('id_tagihan')->constrained('tagihans', 'id_tagihan')->onDelete('cascade');
-            $table->decimal('jumlah_denda', 10, 2);
-            $table->string('periode_denda');
+
+            // Foreign key ke tabel peminjamans (penyebab denda)
+            $table->foreignId('id_peminjaman')->constrained('peminjamans', 'id_peminjaman');
+
+            // Foreign key ke tabel akuns (yang dikenai denda)
+            $table->foreignId('id_akun')->constrained('akuns', 'id_akun');
+
+            $table->enum('jenis_denda', ['rusak', 'hilang', 'inaktivitas']);
+            $table->decimal('jumlah_denda', 15, 2);
+
             $table->timestamps();
         });
     }

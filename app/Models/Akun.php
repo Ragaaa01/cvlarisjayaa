@@ -2,37 +2,115 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Akun extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    protected $primaryKey = 'id_akun';
+    /**
+     * Nama tabel yang terhubung dengan model.
+     *
+     * @var string
+     */
     protected $table = 'akuns';
-    protected $fillable = ['id_role', 'id_perorangan', 'email', 'password', 'status_aktif', 'remember_token'];
-    protected $hidden = ['password', 'remember_token'];
 
+    /**
+     * Kunci utama untuk model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id_akun';
+
+    /**
+     * Atribut yang dapat diisi secara massal.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'id_role',
+        'id_orang',
+        'email',
+        'password',
+        'status_aktif',
+    ];
+
+    /**
+     * Atribut yang harus disembunyikan saat serialisasi.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+    ];
+
+    /**
+     * Atribut yang harus di-cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'password' => 'hashed',
+        'status_aktif' => 'boolean',
+    ];
+
+    /**
+     * Mendefinisikan relasi belongs-to ke model Role.
+     */
     public function role()
     {
-        return $this->belongsTo(Role::class, 'id_role', 'id_role');
+        return $this->belongsTo(Role::class, 'id_role');
     }
 
-    public function perorangan()
+    /**
+     * Mendefinisikan relasi belongs-to ke model Orang.
+     */
+    public function orang()
     {
-        return $this->belongsTo(Perorangan::class, 'id_perorangan', 'id_perorangan');
+        return $this->belongsTo(Orang::class, 'id_orang');
     }
 
-    public function transaksis()
+    /**
+     * Mendefinisikan relasi has-one ke model Deposit.
+     */
+    public function deposit()
     {
-        return $this->hasMany(Transaksi::class, 'id_akun', 'id_akun');
+        return $this->hasOne(Deposit::class, 'id_akun');
     }
 
-    public function getAuthPassword()
+    /**
+     * Mendefinisikan relasi has-many ke model Peminjaman.
+     */
+    public function peminjamans()
     {
-        return $this->password;
+        return $this->hasMany(Peminjaman::class, 'id_akun');
+    }
+
+    /**
+     * Mendefinisikan relasi has-many ke model Pengisian.
+     */
+    public function pengisians()
+    {
+        return $this->hasMany(Pengisian::class, 'id_akun');
+    }
+
+    /**
+     * Mendefinisikan relasi has-many ke model Tagihan.
+     */
+    public function tagihans()
+    {
+        return $this->hasMany(Tagihan::class, 'id_akun');
+    }
+
+    /**
+     * Mendefinisikan relasi has-many ke model FcmToken.
+     */
+    public function fcmTokens()
+    {
+        return $this->hasMany(FcmToken::class, 'id_akun');
     }
 }

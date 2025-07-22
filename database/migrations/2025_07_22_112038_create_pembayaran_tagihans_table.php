@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('pembayaran_tagihans', function (Blueprint $table) {
             $table->id('id_pembayaran_tagihan');
-            $table->foreignId('id_tagihan')->constrained('tagihans', 'id_tagihan')->onDelete('cascade');
-            $table->decimal('jumlah_dibayar', 10, 2);
-            $table->date('tanggal_bayar');
-            $table->enum('metode_pembayaran', ['tunai', 'transfer', 'deposit']);
-            $table->text('keterangan')->nullable();
+
+            // Foreign key ke tabel tagihans
+            $table->foreignId('id_tagihan')->constrained('tagihans', 'id_tagihan');
+
+            $table->decimal('jumlah_dibayar', 15, 2);
+            $table->timestamp('tanggal_bayar')->useCurrent();
+            $table->enum('metode_pembayaran', ['tunai', 'transfer']);
+
             $table->timestamps();
         });
     }

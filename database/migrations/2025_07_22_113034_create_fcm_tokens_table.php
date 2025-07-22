@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('jenis_transaksis', function (Blueprint $table) {
-            $table->id('id_jenis_transaksi');
-            $table->enum('jenis_transaksi', ['peminjaman', 'pengisian', 'deposit', 'denda', 'pengembalian deposit']);
+        Schema::create('fcm_tokens', function (Blueprint $table) {
+            $table->id('id_fcm_token');
+            $table->unsignedBigInteger('id_akun');
+            $table->foreign('id_akun')->references('id_akun')->on('akuns')->onDelete('cascade');
+            $table->text('token');
+            $table->string('nama_perangkat')->nullable();
             $table->timestamps();
         });
     }
@@ -23,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('jenis_transaksis');
+        Schema::dropIfExists('fcm_tokens');
     }
 };

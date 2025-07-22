@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PembayaranTagihan extends Model
+class Pengisian extends Model
 {
     use HasFactory;
 
@@ -14,14 +14,14 @@ class PembayaranTagihan extends Model
      *
      * @var string
      */
-    protected $table = 'pembayaran_tagihans';
+    protected $table = 'pengisians';
 
     /**
      * Kunci utama untuk model.
      *
      * @var string
      */
-    protected $primaryKey = 'id_pembayaran_tagihan';
+    protected $primaryKey = 'id_pengisian';
 
     /**
      * Atribut yang dapat diisi secara massal.
@@ -29,10 +29,10 @@ class PembayaranTagihan extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'id_akun',
         'id_tagihan',
-        'jumlah_dibayar',
-        'tanggal_bayar',
-        'metode_pembayaran',
+        'total_biaya',
+        'waktu_transaksi',
     ];
 
     /**
@@ -41,15 +41,30 @@ class PembayaranTagihan extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'tanggal_bayar' => 'datetime',
+        'waktu_transaksi' => 'datetime',
     ];
 
     /**
+     * Mendefinisikan relasi belongs-to ke model Akun.
+     */
+    public function akun()
+    {
+        return $this->belongsTo(Akun::class, 'id_akun');
+    }
+
+    /**
      * Mendefinisikan relasi belongs-to ke model Tagihan.
-     * Setiap pembayaran adalah bagian dari satu tagihan.
      */
     public function tagihan()
     {
         return $this->belongsTo(Tagihan::class, 'id_tagihan');
+    }
+
+    /**
+     * Mendefinisikan relasi has-many ke model DetailPengisian.
+     */
+    public function detailPengisians()
+    {
+        return $this->hasMany(DetailPengisian::class, 'id_pengisian');
     }
 }

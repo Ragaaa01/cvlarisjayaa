@@ -13,11 +13,20 @@ return new class extends Migration
     {
         Schema::create('notifikasis', function (Blueprint $table) {
             $table->id('id_notifikasi');
-            $table->foreignId('id_tagihan')->constrained('tagihans', 'id_tagihan')->onDelete('cascade');
-            $table->foreignId('id_notifikasi_template')->constrained('notifikasi_templates', 'id_notifikasi_template')->onDelete('cascade');
-            $table->date('tanggal_terjadwal');
+
+            // Foreign key ke akun yang menerima notifikasi
+            $table->foreignId('id_akun')->constrained('akuns', 'id_akun')->onDelete('cascade');
+
+            // Foreign key ke tagihan (jika notifikasi terkait tagihan)
+            $table->foreignId('id_tagihan')->nullable()->constrained('tagihans', 'id_tagihan')->onDelete('set null');
+
+            // Foreign key ke template notifikasi yang digunakan
+            $table->foreignId('id_template')->constrained('notifikasi_templates', 'id_notifikasi_template');
+
+            $table->timestamp('tanggal_terjadwal');
             $table->boolean('status_baca')->default(false);
             $table->timestamp('waktu_dikirim')->nullable();
+
             $table->timestamps();
         });
     }
