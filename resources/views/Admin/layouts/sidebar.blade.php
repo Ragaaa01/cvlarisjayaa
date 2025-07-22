@@ -64,7 +64,7 @@
     <!-- Sidebar Brand -->
     <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
         <div class="sidebar-brand-icon">
-            <img src="img/logolarisjaya.jpg" alt="Laris Jaya Gas Logo" style="width: 40px; height: 40px;">
+            <img src="{{ asset('img/logolarisjaya.jpg') }}" alt="Laris Jaya Gas Logo" style="width: 40px; height: 40px;">
         </div>
         <div class="sidebar-brand-text mx-3" style="font-size: 13px;">Laris Jaya Gas</div>
     </a>
@@ -73,103 +73,105 @@
 
     <!-- Dashboard -->
     <li class="nav-item">
-        <a class="nav-link" href="#">
+        <a class="nav-link" href="{{ route('dashboard') }}">
             <i class="fas fa-fw fa-home"></i>
             <span>Dashboard</span>
         </a>
     </li>
 
-    <hr class="sidebar-divider">
+    @if(Auth::check() && Auth::user()->role->nama_role === 'administrator')
+        <hr class="sidebar-divider">
 
-    <!-- Master Data Heading -->
-    <div class="sidebar-heading">Master Data</div>
+        <!-- Master Data Heading -->
+        <div class="sidebar-heading">Master Data</div>
 
-    <!-- Data Pelanggan -->
-    <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse"
-           data-target="#collapseDataPelanggan" aria-expanded="false"
-           aria-controls="collapseDataPelanggan">
-            <i class="fas fa-fw fa-users"></i>
-            <span>Data Pelanggan</span>
-        </a>
-        <div id="collapseDataPelanggan" class="collapse"
-             aria-labelledby="headingDataPelanggan" data-parent="#accordionSidebar">
-            <div class="collapse-inner rounded py-2">
-                <a class="collapse-item" href="#">
-                    <i class="fas fa-user mr-2"></i> Data Perorangan
-                </a>
-                <a class="collapse-item" href="#">
-                    <i class="fas fa-building mr-2"></i> Data Perusahaan
-                </a>
+        <!-- Data Pelanggan -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse"
+               data-target="#collapseDataPelanggan" aria-expanded="false"
+               aria-controls="collapseDataPelanggan">
+                <i class="fas fa-fw fa-users"></i>
+                <span>Data Pelanggan</span>
+            </a>
+            <div id="collapseDataPelanggan" class="collapse"
+                 aria-labelledby="headingDataPelanggan" data-parent="#accordionSidebar">
+                <div class="collapse-inner rounded py-2">
+                    <a class="collapse-item" href="#">
+                        <i class="fas fa-user mr-2"></i> Data Perorangan
+                    </a>
+                    <a class="collapse-item" href="#">
+                        <i class="fas fa-building mr-2"></i> Data Perusahaan
+                    </a>
+                </div>
             </div>
-        </div>
-    </li>
+        </li>
 
-    <!-- Pengelolaan Akun -->
-    <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse"
-           data-target="#collapsePengelolaanAkun" aria-expanded="false"
-           aria-controls="collapsePengelolaanAkun">
-            <i class="fas fa-fw fa-user-cog"></i>
-            <span>Pengelolaan Akun</span>
-        </a>
-        <div id="collapsePengelolaanAkun" class="collapse"
-             aria-labelledby="headingPengelolaanAkun" data-parent="#accordionSidebar">
-            <div class="collapse-inner rounded py-2">
-                <a class="collapse-item" href="#">
-                    <i class="fas fa-user-cog mr-2"></i> Data Akun
-                </a>
-                <a class="collapse-item" href="#">
-                    <i class="fas fa-user-shield mr-2"></i> Data Role
-                </a>
+        <!-- Pengelolaan Akun -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse"
+               data-target="#collapsePengelolaanAkun" aria-expanded="false"
+               aria-controls="collapsePengelolaanAkun">
+                <i class="fas fa-fw fa-user-cog"></i>
+                <span>Pengelolaan Akun</span>
+            </a>
+            <div id="collapsePengelolaanAkun" class="collapse"
+                 aria-labelledby="headingPengelolaanAkun" data-parent="#accordionSidebar">
+                <div class="collapse-inner rounded py-2">
+                    <a class="collapse-item" href="#">
+                        <i class="fas fa-user-cog mr-2"></i> Data Akun
+                    </a>
+                    <a class="collapse-item" href="#">
+                        <i class="fas fa-user-shield mr-2"></i> Data Role
+                    </a>
+                </div>
             </div>
-        </div>
-    </li>
+        </li>
 
-    <!-- Data Tabung -->
-    <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse"
-           data-target="#collapseDataTabung" aria-expanded="false"
-           aria-controls="collapseDataTabung">
-            <i class="fas fa-fw fa-cube"></i>
-            <span>Data Tabung</span>
-        </a>
-        <div id="collapseDataTabung" class="collapse"
-             aria-labelledby="headingDataTabung" data-parent="#accordionSidebar">
-            <div class="collapse-inner rounded py-2">
-                <a class="collapse-item" href="#">
-                    <i class="fas fa-gas-pump mr-2"></i> Jenis Tabung
-                </a>
-                <a class="collapse-item" href="#">
-                    <i class="fas fa-gas-pump mr-2"></i> Status Tabung
-                </a>
-                <a class="collapse-item" href="#">
-                    <i class="fas fa-cubes mr-2"></i> Ketersediaan Tabung
-                </a>
+        <!-- Data Tabung -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse"
+               data-target="#collapseDataTabung" aria-expanded="false"
+               aria-controls="collapseDataTabung">
+                <i class="fas fa-fw fa-cube"></i>
+                <span>Data Tabung</span>
+            </a>
+            <div id="collapseDataTabung" class="collapse"
+                 aria-labelledby="headingDataTabung" data-parent="#accordionSidebar">
+                <div class="collapse-inner rounded py-2">
+                    <a class="collapse-item" href="#">
+                        <i class="fas fa-gas-pump mr-2"></i> Jenis Tabung
+                    </a>
+                    <a class="collapse-item" href="#">
+                        <i class="fas fa-gas-pump mr-2"></i> Status Tabung
+                    </a>
+                    <a class="collapse-item" href="#">
+                        <i class="fas fa-cubes mr-2"></i> Ketersediaan Tabung
+                    </a>
+                </div>
             </div>
-        </div>
-    </li>
+        </li>
 
-    <!-- Data Pendukung Transaksi -->
-    <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse"
-           data-target="#collapseDataPendukungTransaksi" aria-expanded="false"
-           aria-controls="collapseDataPendukungTransaksi">
-            <i class="fas fa-fw fa-database"></i>
-            <span>Data Pendukung Transaksi</span>
-        </a>
-        <div id="collapseDataPendukungTransaksi" class="collapse"
-             aria-labelledby="headingDataPendukungTransaksi" data-parent="#accordionSidebar">
-            <div class="collapse-inner rounded py-2">
-                <a class="collapse-item" href="#">
-                    <i class="fas fa-random mr-2"></i> Jenis Transaksi
-                </a>
-                <a class="collapse-item" href="#">
-                    <i class="fas fa-toggle-on mr-2"></i> Status Transaksi
-                </a>
+        <!-- Data Pendukung Transaksi -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse"
+               data-target="#collapseDataPendukungTransaksi" aria-expanded="false"
+               aria-controls="collapseDataPendukungTransaksi">
+                <i class="fas fa-fw fa-database"></i>
+                <span>Data Pendukung Transaksi</span>
+            </a>
+            <div id="collapseDataPendukungTransaksi" class="collapse"
+                 aria-labelledby="headingDataPendukungTransaksi" data-parent="#accordionSidebar">
+                <div class="collapse-inner rounded py-2">
+                    <a class="collapse-item" href="#">
+                        <i class="fas fa-random mr-2"></i> Jenis Transaksi
+                    </a>
+                    <a class="collapse-item" href="#">
+                        <i class="fas fa-toggle-on mr-2"></i> Status Transaksi
+                    </a>
+                </div>
             </div>
-        </div>
-    </li>
+        </li>
+    @endif
 
     <hr class="sidebar-divider">
 

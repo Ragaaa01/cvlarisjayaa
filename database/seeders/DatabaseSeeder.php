@@ -14,15 +14,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-       // Tambah role
-        Role::create(['nama_role' => 'administrator']);
-        Role::create(['nama_role' => 'karyawan']);
-        Role::create(['nama_role' => 'pelanggan']);
+    //    // Tambah role
+    //     Role::create(['nama_role' => 'administrator']);
+    //     Role::create(['nama_role' => 'karyawan']);
+    //     Role::create(['nama_role' => 'pelanggan']);
 
         // Tambah akun admin
         Akun::create([
-            'id_role' => 1, // ID untuk role administrator
-            'email' => 'admin@gmail.com',
+            'id_role' => 2, // ID untuk role administrator
+            'email' => 'karyawan@gmail.com',
             'password' => bcrypt('password'),
             'status_aktif' => true,
         ]);

@@ -16,7 +16,7 @@ return [
     'providers' => [
         'akuns' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Akun::class,
+            'model' => App\Models\Akun::class, // Pastikan path ini benar
         ],
     ],
 

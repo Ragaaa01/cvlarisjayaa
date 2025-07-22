@@ -10,13 +10,13 @@ class Role
 {
     public function handle(Request $request, Closure $next, ...$roles)
     {
-        if (!Auth::check()) {
+        if (!Auth::guard('web')->check()) {
             return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu.');
         }
 
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
         if (!$user->role) {
-            Auth::logout();
+            Auth::guard('web')->logout();
             return redirect()->route('login')->with('error', 'Akun Anda tidak memiliki role yang valid.');
         }
 
