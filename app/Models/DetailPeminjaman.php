@@ -31,6 +31,7 @@ class DetailPeminjaman extends Model
     protected $fillable = [
         'id_peminjaman',
         'id_tabung',
+        'id_jenis_tabung',
         'harga_pinjam_saat_itu',
     ];
 
@@ -50,5 +51,14 @@ class DetailPeminjaman extends Model
     public function tabung()
     {
         return $this->belongsTo(Tabung::class, 'id_tabung');
+    }
+
+    /**
+     * Mendefinisikan relasi belongs-to ke model JenisTabung.
+     * Setiap detail merujuk pada satu jenis tabung.
+     */
+    public function jenisTabung()
+    {
+        return $this->belongsTo(JenisTabung::class, 'id_jenis_tabung');
     }
 }

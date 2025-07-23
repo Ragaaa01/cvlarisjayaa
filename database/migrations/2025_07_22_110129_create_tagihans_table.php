@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreignId('id_akun')->constrained('akuns', 'id_akun');
 
             $table->decimal('total_tagihan', 15, 2);
+            $table->decimal('jumlah_biaya_aktual', 15, 2)->default(0);
+            $table->decimal('jumlah_top_up', 15, 2)->default(0);
             $table->decimal('jumlah_dibayar', 15, 2)->default(0);
             $table->decimal('sisa', 15, 2);
             $table->enum('status_tagihan', ['lunas', 'belum_lunas'])->default('belum_lunas');

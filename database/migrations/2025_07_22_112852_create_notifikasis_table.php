@@ -16,6 +16,7 @@ return new class extends Migration
 
             // Foreign key ke akun yang menerima notifikasi
             $table->foreignId('id_akun')->constrained('akuns', 'id_akun')->onDelete('cascade');
+            $table->foreignId('id_peminjaman')->nullable()->constrained('peminjamans', 'id_peminjaman')->onDelete('cascade');
 
             // Foreign key ke tagihan (jika notifikasi terkait tagihan)
             $table->foreignId('id_tagihan')->nullable()->constrained('tagihans', 'id_tagihan')->onDelete('set null');

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreignId('id_status_tabung')->constrained('status_tabungs', 'id_status_tabung');
 
             $table->timestamps();
+            $table->softDeletes(); 
         });
     }
 

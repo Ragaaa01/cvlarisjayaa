@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id('id_status_tabung');
             $table->string('status_tabung');
             $table->timestamps();
+            $table->softDeletes(); 
         });
     }
 

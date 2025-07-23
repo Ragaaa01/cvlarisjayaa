@@ -31,6 +31,7 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'status_aktif' => true,
         ]);
+
         // Buat data Karyawan
         $administrator = Orang::create([
             'nama_lengkap' => 'Karyawan Laris Jaya Gas',
@@ -41,7 +42,7 @@ class UserSeeder extends Seeder
 
         Akun::create([
             'id_orang' => $administrator->id_orang,
-            'id_role' => 1, // ID untuk 'administrator'
+            'id_role' => 3, // ID untuk 'administrator'
             'email' => 'karyawan@larisjayagas.com',
             'password' => Hash::make('password'),
             'status_aktif' => true,
@@ -58,7 +59,7 @@ class UserSeeder extends Seeder
         Akun::create([
             'id_orang' => $pelanggan->id_orang,
             'id_role' => 2, // ID untuk 'pelanggan'
-            'email' => 'pelanggan@email.com',
+            'email' => 'pelanggan@gmail.com',
             'password' => Hash::make('password123'),
             'status_aktif' => true,
         ]);

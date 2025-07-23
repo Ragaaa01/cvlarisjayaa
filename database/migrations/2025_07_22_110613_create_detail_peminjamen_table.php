@@ -18,7 +18,8 @@ return new class extends Migration
             $table->foreignId('id_peminjaman')->constrained('peminjamans', 'id_peminjaman')->onDelete('cascade');
 
             // Foreign key ke tabel tabungs (item spesifik yang dipinjam)
-            $table->foreignId('id_tabung')->constrained('tabungs', 'id_tabung');
+            $table->foreignId('id_tabung')->nullable()->constrained('tabungs', 'id_tabung');
+            $table->foreignId('id_jenis_tabung')->constrained('jenis_tabungs', 'id_jenis_tabung');
 
             // Menyimpan harga sewa yang berlaku saat transaksi terjadi
             $table->decimal('harga_pinjam_saat_itu', 15, 2);

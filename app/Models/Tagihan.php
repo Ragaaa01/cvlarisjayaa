@@ -31,6 +31,8 @@ class Tagihan extends Model
     protected $fillable = [
         'id_akun',
         'total_tagihan',
+        'jumlah_biaya_aktual', // <-- TAMBAHKAN INI
+        'jumlah_top_up',
         'jumlah_dibayar',
         'sisa',
         'status_tagihan',

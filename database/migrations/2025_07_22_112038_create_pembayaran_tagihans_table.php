@@ -19,7 +19,7 @@ return new class extends Migration
 
             $table->decimal('jumlah_dibayar', 15, 2);
             $table->timestamp('tanggal_bayar')->useCurrent();
-            $table->enum('metode_pembayaran', ['tunai', 'transfer']);
+            $table->string('metode_pembayaran');
 
             $table->timestamps();
         });
