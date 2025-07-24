@@ -4,9 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use NotificationChannels\Fcm\FcmChannel;
 
-class FcmToken extends Model
+class JenisTransaksiDetail extends Model
 {
     use HasFactory;
 
@@ -15,14 +14,14 @@ class FcmToken extends Model
      *
      * @var string
      */
-    protected $table = 'fcm_tokens';
+    protected $table = 'jenis_transaksi_details';
 
     /**
      * Kunci utama untuk model.
      *
      * @var string
      */
-    protected $primaryKey = 'id_fcm_token';
+    protected $primaryKey = 'id_jenis_transaksi_detail';
 
     /**
      * Atribut yang dapat diisi secara massal.
@@ -30,17 +29,15 @@ class FcmToken extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'id_akun',
-        'token',
-        'nama_perangkat',
+        'jenis_transaksi',
     ];
 
     /**
-     * Mendefinisikan relasi belongs-to ke model Akun.
-     * Setiap token dimiliki oleh satu akun.
+     * Mendefinisikan relasi has-many ke model TransaksiDetail.
+     * Satu jenis transaksi bisa ada di banyak detail transaksi.
      */
-    public function akun()
+    public function transaksiDetails()
     {
-        return $this->belongsTo(Akun::class, 'id_akun');
+        return $this->hasMany(TransaksiDetail::class, 'id_jenis_transaksi_detail');
     }
 }

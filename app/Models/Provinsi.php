@@ -4,9 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use NotificationChannels\Fcm\FcmChannel;
 
-class FcmToken extends Model
+class Provinsi extends Model
 {
     use HasFactory;
 
@@ -15,14 +14,14 @@ class FcmToken extends Model
      *
      * @var string
      */
-    protected $table = 'fcm_tokens';
+    protected $table = 'provinsis';
 
     /**
      * Kunci utama untuk model.
      *
      * @var string
      */
-    protected $primaryKey = 'id_fcm_token';
+    protected $primaryKey = 'id_provinsi';
 
     /**
      * Atribut yang dapat diisi secara massal.
@@ -30,17 +29,15 @@ class FcmToken extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'id_akun',
-        'token',
-        'nama_perangkat',
+        'nama_provinsi',
     ];
 
     /**
-     * Mendefinisikan relasi belongs-to ke model Akun.
-     * Setiap token dimiliki oleh satu akun.
+     * Mendefinisikan relasi has-many ke model Kabupaten.
+     * Satu provinsi memiliki banyak kabupaten.
      */
-    public function akun()
+    public function kabupatens()
     {
-        return $this->belongsTo(Akun::class, 'id_akun');
+        return $this->hasMany(Kabupaten::class, 'id_provinsi');
     }
 }

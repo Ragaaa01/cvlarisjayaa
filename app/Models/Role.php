@@ -9,12 +9,35 @@ class Role extends Model
 {
     use HasFactory;
 
-    protected $primaryKey = 'id_role';
+    /**
+     * Nama tabel yang terhubung dengan model.
+     *
+     * @var string
+     */
     protected $table = 'roles';
-    protected $fillable = ['nama_role'];
 
+    /**
+     * Kunci utama untuk model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id_role';
+
+    /**
+     * Atribut yang dapat diisi secara massal.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'nama_role',
+    ];
+
+    /**
+     * Mendefinisikan relasi has-many ke model Akun.
+     * Satu peran bisa dimiliki oleh banyak akun.
+     */
     public function akuns()
     {
-        return $this->hasMany(Akun::class, 'id_role', 'id_role');
+        return $this->hasMany(Akun::class, 'id_role');
     }
 }

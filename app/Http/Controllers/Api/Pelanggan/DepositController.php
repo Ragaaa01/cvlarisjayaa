@@ -44,6 +44,8 @@ class DepositController extends Controller
             $tagihan = Tagihan::create([
                 'id_akun' => $akun->id_akun,
                 'total_tagihan' => $jumlahTopUp,
+                'jumlah_biaya_aktual' => 0, // Tidak ada biaya aktual untuk top-up
+                'jumlah_top_up' => $jumlahTopUp, // Seluruhnya adalah top-up
                 'sisa' => $jumlahTopUp,
                 'status_tagihan' => 'belum_lunas',
             ]);
@@ -67,6 +69,12 @@ class DepositController extends Controller
                         'name' => 'Top Up Saldo Deposit',
                     ],
                 ],
+                // --- [PERBAIKAN DI SINI] ---
+                // Beritahu Midtrans untuk kembali ke URL ini setelah selesai.
+                'callbacks' => [
+                    'finish' => 'https://myapp.com/finish'
+                ]
+                // -------------------------
             ];
 
             // 3. Dapatkan Payment URL dari Midtrans
@@ -79,7 +87,7 @@ class DepositController extends Controller
                 'message' => 'Tagihan top-up berhasil dibuat. Silakan lanjutkan pembayaran.',
                 'data' => [
                     'tagihan' => $tagihan,
-                    'payment_url' => $paymentUrl, // Mengembalikan URL, bukan token
+                    'payment_url' => $paymentUrl,
                 ]
             ], 201);
         } catch (Exception $e) {

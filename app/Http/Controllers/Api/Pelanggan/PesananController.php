@@ -132,7 +132,9 @@ class PesananController extends Controller
                     $itemDetails = [];
                     if ($totalBiayaAktual > 0) $itemDetails[] = ['id' => 'BIAYA_LAYANAN', 'price' => $totalBiayaAktual, 'quantity' => 1, 'name' => 'Biaya Sewa & Isi Ulang'];
                     if ($depositTopUp > 0) $itemDetails[] = ['id' => 'TOPUP_DEPOSIT', 'price' => $depositTopUp, 'quantity' => 1, 'name' => 'Top Up Saldo Deposit'];
-                    $midtransParams = ['transaction_details' => ['order_id' => 'TRX-' . $tagihan->id_tagihan . '-' . time(), 'gross_amount' => $totalPembayaran], 'customer_details' => ['first_name' => $akun->orang->nama_lengkap, 'email' => $akun->email, 'phone' => $akun->orang->no_telepon], 'item_details' => $itemDetails];
+                    $midtransParams = ['transaction_details' => ['order_id' => 'TRX-' . $tagihan->id_tagihan . '-' . time(), 'gross_amount' => $totalPembayaran], 'customer_details' => ['first_name' => $akun->orang->nama_lengkap, 'email' => $akun->email, 'phone' => $akun->orang->no_telepon], 'item_details' => $itemDetails, 'callbacks' => [
+                        'finish' => 'https://myapp.com/finish'
+                    ]];
                     $paymentUrl = Snap::createTransaction($midtransParams)->redirect_url;
                     $message = 'Pesanan berhasil dibuat. Silakan lanjutkan ke pembayaran.';
                 } else {

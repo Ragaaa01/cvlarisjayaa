@@ -30,7 +30,6 @@ class Notifikasi extends Model
      */
     protected $fillable = [
         'id_akun',
-        'id_tagihan',
         'id_template',
         'tanggal_terjadwal',
         'status_baca',
@@ -50,6 +49,7 @@ class Notifikasi extends Model
 
     /**
      * Mendefinisikan relasi belongs-to ke model Akun.
+     * Setiap notifikasi ditujukan untuk satu akun.
      */
     public function akun()
     {
@@ -57,15 +57,8 @@ class Notifikasi extends Model
     }
 
     /**
-     * Mendefinisikan relasi belongs-to ke model Tagihan.
-     */
-    public function tagihan()
-    {
-        return $this->belongsTo(Tagihan::class, 'id_tagihan');
-    }
-
-    /**
      * Mendefinisikan relasi belongs-to ke model NotifikasiTemplate.
+     * Setiap notifikasi dibuat dari satu template.
      */
     public function template()
     {

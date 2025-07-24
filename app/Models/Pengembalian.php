@@ -29,8 +29,19 @@ class Pengembalian extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'id_peminjaman',
-        'tanggal_kembali',
+        'id_tabung',
+        'id_transaksi_detail',
+        'tanggal_pinjam',
+        'waktu_pinjam',
+        'tanggal_pengembalian',
+        'waktu_pengembalian',
+        'jumlah_keterlambatan_bulan',
+        'total_denda',
+        'deposit',
+        'denda_kondisi_tabung',
+        'id_status_tabung',
+        'sisa_deposit',
+        'bayar_tagihan',
     ];
 
     /**
@@ -39,23 +50,31 @@ class Pengembalian extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'tanggal_kembali' => 'datetime',
+        'tanggal_pinjam' => 'datetime',
+        'tanggal_pengembalian' => 'datetime',
     ];
 
     /**
-     * Mendefinisikan relasi belongs-to ke model Peminjaman.
-     * Setiap pengembalian terkait dengan satu peminjaman.
+     * Mendefinisikan relasi belongs-to ke model Tabung.
      */
-    public function peminjaman()
+    public function tabung()
     {
-        return $this->belongsTo(Peminjaman::class, 'id_peminjaman');
+        return $this->belongsTo(Tabung::class, 'id_tabung');
     }
 
     /**
-     * Mendefinisikan relasi has-many ke model DetailPengembalian.
+     * Mendefinisikan relasi belongs-to ke model TransaksiDetail.
      */
-    public function detailPengembalians()
+    public function transaksiDetail()
     {
-        return $this->hasMany(DetailPengembalian::class, 'id_pengembalian');
+        return $this->belongsTo(TransaksiDetail::class, 'id_transaksi_detail');
+    }
+
+    /**
+     * Mendefinisikan relasi belongs-to ke model StatusTabung.
+     */
+    public function statusTabung()
+    {
+        return $this->belongsTo(StatusTabung::class, 'id_status_tabung');
     }
 }

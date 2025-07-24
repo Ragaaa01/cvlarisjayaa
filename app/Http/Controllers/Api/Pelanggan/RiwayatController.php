@@ -20,7 +20,11 @@ class RiwayatController extends Controller
         try {
             $akun = $request->user();
             $riwayatPeminjaman = Peminjaman::where('id_akun', $akun->id_akun)
-                ->with(['detailPeminjamans.tabung.jenisTabung', 'tagihan'])
+                ->with([
+                    'detailPeminjamans.jenisTabung', // <-- Selalu muat ini
+                    'detailPeminjamans.tabung.jenisTabung',
+                    'tagihan'
+                ])
                 ->latest('tanggal_pinjam')
                 ->paginate(15);
 
@@ -45,7 +49,11 @@ class RiwayatController extends Controller
         try {
             $akun = $request->user();
             $riwayatIsiUlang = Pengisian::where('id_akun', $akun->id_akun)
-                ->with(['detailPengisians.tabung.jenisTabung', 'tagihan'])
+                ->with([
+                    'detailPengisians.jenisTabung',
+                    'detailPengisians.tabung.jenisTabung',
+                    'tagihan',
+                ])
                 ->latest('waktu_transaksi')
                 ->paginate(15);
 
