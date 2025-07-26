@@ -62,7 +62,7 @@
 <ul class="navbar-nav sidebar sidebar-dark accordion" id="accordionSidebar">
 
     <!-- Sidebar Brand -->
-    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
+    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ route('dashboard') }}">
         <div class="sidebar-brand-icon">
             <img src="{{ asset('img/logolarisjaya.jpg') }}" alt="Laris Jaya Gas Logo" style="width: 40px; height: 40px;">
         </div>
@@ -96,11 +96,14 @@
             <div id="collapseDataPelanggan" class="collapse"
                  aria-labelledby="headingDataPelanggan" data-parent="#accordionSidebar">
                 <div class="collapse-inner rounded py-2">
-                    <a class="collapse-item" href="#">
+                    <a class="collapse-item" href="{{ route('admin.orang.index') }}">
                         <i class="fas fa-user mr-2"></i> Data Perorangan
                     </a>
-                    <a class="collapse-item" href="#">
+                    <a class="collapse-item" href="{{ route('admin.perusahaan.index') }}">
                         <i class="fas fa-building mr-2"></i> Data Perusahaan
+                    </a>
+                    <a class="collapse-item" href="{{ route('admin.orang_perusahaan.index') }}">
+                        <i class="fas fa-handshake mr-2"></i> Relasi Orang-Perusahaan
                     </a>
                 </div>
             </div>
@@ -117,10 +120,10 @@
             <div id="collapsePengelolaanAkun" class="collapse"
                  aria-labelledby="headingPengelolaanAkun" data-parent="#accordionSidebar">
                 <div class="collapse-inner rounded py-2">
-                    <a class="collapse-item" href="#">
+                    <a class="collapse-item" href="{{ route('admin.akun.index') }}">
                         <i class="fas fa-user-cog mr-2"></i> Data Akun
                     </a>
-                    <a class="collapse-item" href="#">
+                    <a class="collapse-item" href="{{ route('admin.role.index') }}">
                         <i class="fas fa-user-shield mr-2"></i> Data Role
                     </a>
                 </div>
@@ -138,35 +141,35 @@
             <div id="collapseDataTabung" class="collapse"
                  aria-labelledby="headingDataTabung" data-parent="#accordionSidebar">
                 <div class="collapse-inner rounded py-2">
-                    <a class="collapse-item" href="#">
+                    <a class="collapse-item" href="{{ route('admin.jenis_tabung.index') }}">
                         <i class="fas fa-gas-pump mr-2"></i> Jenis Tabung
                     </a>
-                    <a class="collapse-item" href="#">
-                        <i class="fas fa-gas-pump mr-2"></i> Status Tabung
+                    <a class="collapse-item" href="{{ route('admin.status_tabung.index') }}">
+                        <i class="fas fa-toggle-on mr-2"></i> Status Tabung
                     </a>
-                    <a class="collapse-item" href="#">
+                    <a class="collapse-item" href="{{ route('admin.tabung.index') }}">
                         <i class="fas fa-cubes mr-2"></i> Ketersediaan Tabung
                     </a>
                 </div>
             </div>
         </li>
 
-        <!-- Data Pendukung Transaksi -->
+        <!-- Data Notifikasi -->
         <li class="nav-item">
             <a class="nav-link collapsed" href="#" data-toggle="collapse"
-               data-target="#collapseDataPendukungTransaksi" aria-expanded="false"
-               aria-controls="collapseDataPendukungTransaksi">
-                <i class="fas fa-fw fa-database"></i>
-                <span>Data Pendukung Transaksi</span>
+               data-target="#collapseDataNotifikasi" aria-expanded="false"
+               aria-controls="collapseDataNotifikasi">
+                <i class="fas fa-fw fa-bell"></i>
+                <span>Data Notifikasi</span>
             </a>
-            <div id="collapseDataPendukungTransaksi" class="collapse"
-                 aria-labelledby="headingDataPendukungTransaksi" data-parent="#accordionSidebar">
+            <div id="collapseDataNotifikasi" class="collapse"
+                 aria-labelledby="headingDataNotifikasi" data-parent="#accordionSidebar">
                 <div class="collapse-inner rounded py-2">
                     <a class="collapse-item" href="#">
-                        <i class="fas fa-random mr-2"></i> Jenis Transaksi
+                        <i class="fas fa-file-alt mr-2"></i> Template Notifikasi
                     </a>
                     <a class="collapse-item" href="#">
-                        <i class="fas fa-toggle-on mr-2"></i> Status Transaksi
+                        <i class="fas fa-bell mr-2"></i> Notifikasi
                     </a>
                 </div>
             </div>
@@ -178,16 +181,6 @@
     <!-- Master Transaksi Heading -->
     <div class="sidebar-heading">Master Transaksi</div>
 
-    <!-- Data Transaksi -->
-    <li class="nav-item">
-        <a class="nav-link" href="#">
-            <i class="fas fa-fw fa-cash-register"></i>
-            <span>Data Transaksi</span>
-        </a>
-    </li>
-
-    <hr class="sidebar-divider">
-
     <!-- Peminjaman -->
     <li class="nav-item">
         <a class="nav-link" href="#">
@@ -195,8 +188,6 @@
             <span>Peminjaman</span>
         </a>
     </li>
-
-    <hr class="sidebar-divider">
 
     <!-- Pengembalian -->
     <li class="nav-item">
@@ -206,7 +197,13 @@
         </a>
     </li>
 
-    <hr class="sidebar-divider">
+    <!-- Pengisian -->
+    <li class="nav-item">
+        <a class="nav-link" href="#">
+            <i class="fas fa-fw fa-fill-drip"></i>
+            <span>Pengisian</span>
+        </a>
+    </li>
 
     <!-- Tagihan -->
     <li class="nav-item">
@@ -225,17 +222,39 @@
                 <a class="collapse-item" href="#">
                     <i class="fas fa-check-circle mr-2"></i> Sudah Lunas
                 </a>
+                <a class="collapse-item" href="#">
+                    <i class="fas fa-money-check-alt mr-2"></i> Pembayaran Tagihan
+                </a>
             </div>
         </div>
     </li>
 
-    <hr class="sidebar-divider">
+    <!-- Deposit -->
+    <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse"
+           data-target="#collapseDeposit" aria-expanded="false"
+           aria-controls="collapseDeposit">
+            <i class="fas fa-fw fa-wallet"></i>
+            <span>Deposit</span>
+        </a>
+        <div id="collapseDeposit" class="collapse"
+             aria-labelledby="headingDeposit" data-parent="#accordionSidebar">
+            <div class="collapse-inner rounded py-2">
+                <a class="collapse-item" href="#">
+                    <i class="fas fa-wallet mr-2"></i> Saldo Deposit
+                </a>
+                <a class="collapse-item" href="#">
+                    <i class="fas fa-history mr-2"></i> Riwayat Deposit
+                </a>
+            </div>
+        </div>
+    </li>
 
-    <!-- Riwayat Transaksi -->
+    <!-- Denda -->
     <li class="nav-item">
         <a class="nav-link" href="#">
-            <i class="fas fa-fw fa-history"></i>
-            <span>Riwayat Transaksi</span>
+            <i class="fas fa-fw fa-exclamation-circle"></i>
+            <span>Denda</span>
         </a>
     </li>
 
