@@ -24,7 +24,7 @@ class Akun extends Authenticatable
      *
      * @var string
      */
-    protected $primaryKey = 'id_akun';
+    protected $primaryKey = 'id_akuns';
 
     /**
      * Atribut yang dapat diisi secara massal.
@@ -75,35 +75,11 @@ class Akun extends Authenticatable
     }
 
     /**
-     * Mendefinisikan relasi has-one ke model Deposit.
+     * Mendefinisikan relasi has-many ke model Notifikasi.
      */
-    public function deposit()
+    public function notifikasis()
     {
-        return $this->hasOne(Deposit::class, 'id_akun');
-    }
-
-    /**
-     * Mendefinisikan relasi has-many ke model Peminjaman.
-     */
-    public function peminjamans()
-    {
-        return $this->hasMany(Peminjaman::class, 'id_akun');
-    }
-
-    /**
-     * Mendefinisikan relasi has-many ke model Pengisian.
-     */
-    public function pengisians()
-    {
-        return $this->hasMany(Pengisian::class, 'id_akun');
-    }
-
-    /**
-     * Mendefinisikan relasi has-many ke model Tagihan.
-     */
-    public function tagihans()
-    {
-        return $this->hasMany(Tagihan::class, 'id_akun');
+        return $this->hasMany(Notifikasi::class, 'id_akun');
     }
 
     /**

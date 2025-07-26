@@ -16,9 +16,13 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
-            MasterDataSeeder::class,
             UserSeeder::class,
+            AlamatSeeder::class,
+            JenisTabungSeeder::class,
+            StatusTabungSeeder::class,
+            KepemilikanSeeder::class,
+            JenisTransaksiDetailSeeder::class,
+            NotifikasiTemplateSeeder::class,
         ]);
-
     }
 }

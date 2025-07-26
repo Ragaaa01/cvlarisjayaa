@@ -32,6 +32,7 @@ class Tabung extends Model
         'kode_tabung',
         'id_jenis_tabung',
         'id_status_tabung',
+        'id_kepemilikan',
     ];
 
     /**
@@ -51,11 +52,19 @@ class Tabung extends Model
     }
 
     /**
-     * Mendefinisikan relasi has-many ke model DetailPeminjaman.
-     * Satu tabung bisa memiliki banyak riwayat peminjaman.
+     * Mendefinisikan relasi belongs-to ke model Kepemilikan.
      */
-    public function detailPeminjamans()
+    public function kepemilikan()
     {
-        return $this->hasMany(DetailPeminjaman::class, 'id_tabung');
+        return $this->belongsTo(Kepemilikan::class, 'id_kepemilikan');
+    }
+
+    /**
+     * Mendefinisikan relasi has-many ke model TransaksiDetail.
+     * Satu tabung bisa ada di banyak detail transaksi.
+     */
+    public function transaksiDetails()
+    {
+        return $this->hasMany(TransaksiDetail::class, 'id_tabung');
     }
 }

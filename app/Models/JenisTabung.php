@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class JenisTabung extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes; // Tambahkan SoftDeletes jika perlu
 
     /**
      * Nama tabel yang terhubung dengan model.
@@ -36,18 +37,8 @@ class JenisTabung extends Model
     ];
 
     /**
-     * Atribut yang harus di-cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'harga_pinjam' => 'decimal:2',
-        'harga_isi_ulang' => 'decimal:2',
-        'nilai_deposit' => 'decimal:2',
-    ];
-
-    /**
      * Mendefinisikan relasi has-many ke model Tabung.
+     * Satu jenis tabung bisa dimiliki oleh banyak tabung fisik.
      */
     public function tabungs()
     {

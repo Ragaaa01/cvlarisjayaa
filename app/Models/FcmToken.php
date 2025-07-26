@@ -10,18 +10,37 @@ class FcmToken extends Model
 {
     use HasFactory;
 
+    /**
+     * Nama tabel yang terhubung dengan model.
+     *
+     * @var string
+     */
     protected $table = 'fcm_tokens';
+
+    /**
+     * Kunci utama untuk model.
+     *
+     * @var string
+     */
     protected $primaryKey = 'id_fcm_token';
 
-    protected $fillable = ['id_akun', 'token', 'nama_perangkat'];
+    /**
+     * Atribut yang dapat diisi secara massal.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'id_akun',
+        'token',
+        'nama_perangkat',
+    ];
 
+    /**
+     * Mendefinisikan relasi belongs-to ke model Akun.
+     * Setiap token dimiliki oleh satu akun.
+     */
     public function akun()
     {
-        return $this->belongsTo(Akun::class, 'id_akun', 'id_akun');
-    }
-
-    public function via($notifiable)
-    {
-        return [FcmChannel::class];
+        return $this->belongsTo(Akun::class, 'id_akun');
     }
 }
