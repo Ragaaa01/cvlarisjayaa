@@ -3,13 +3,10 @@
 namespace App\Http\Controllers\Api\Administrator;
 
 use App\Http\Controllers\Controller;
-use App\Models\Peminjaman;
 use App\Models\Pengembalian;
-use App\Models\DetailPengembalian;
-use App\Models\Denda;
-use App\Models\RiwayatDeposit;
-use App\Models\Tagihan;
 use App\Models\Tabung;
+use App\Models\Transaksi;
+use App\Models\TransaksiDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -18,142 +15,223 @@ use Exception;
 
 class PengembalianController extends Controller
 {
-    // Definisikan biaya administrasi sebagai konstanta agar mudah diubah
+    // Mendefinisikan denda dan biaya sebagai konstanta
+    private const DENDA_KETERLAMBATAN_PER_BULAN = 50000;
     private const BIAYA_ADMINISTRASI = 50000;
 
     /**
-     * Memproses pengembalian tabung, menghitung denda, dan mengelola deposit.
+     * [BARU] Mengambil daftar semua item peminjaman yang masih aktif untuk seorang pelanggan.
      */
-    public function store(Request $request, $id_peminjaman)
+    public function getPeminjamanAktifByOrang($id_orang)
+    {
+        try {
+            $peminjamanAktif = TransaksiDetail::whereHas('transaksi', function ($q) use ($id_orang) {
+                $q->where('id_orang', $id_orang);
+            })
+                ->whereHas('jenisTransaksiDetail', function ($q) {
+                    $q->where('jenis_transaksi', 'peminjaman');
+                })
+                ->whereDoesntHave('pengembalian') // Kunci: Hanya yang belum dikembalikan
+                ->with(['tabung.jenisTabung', 'transaksi.orang.mitras', 'tabung.statusTabung', 'jenisTransaksiDetail'])
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data peminjaman aktif berhasil diambil.',
+                'data'    => $peminjamanAktif
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage(),
+                'data'    => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Mencari detail transaksi peminjaman yang masih aktif berdasarkan kode tabung.
+     */
+    public function cariPeminjamanAktifByKodeTabung($kode_tabung)
+    {
+        try {
+            $tabung = Tabung::where('kode_tabung', $kode_tabung)->firstOrFail();
+
+            $detailPeminjaman = TransaksiDetail::where('id_tabung', $tabung->id_tabung)
+                ->whereHas('jenisTransaksiDetail', function ($q) {
+                    $q->where('jenis_transaksi', 'peminjaman');
+                })
+                ->whereDoesntHave('pengembalian')
+                ->with(['transaksi.orang', 'tabung.jenisTabung', 'tabung.statusTabung'])
+                ->latest('created_at')
+                ->first();
+
+            if (!$detailPeminjaman) {
+                throw new Exception("Tidak ditemukan transaksi peminjaman aktif untuk tabung ini.");
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data peminjaman aktif ditemukan.',
+                'data'    => $detailPeminjaman
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data'    => null
+            ], 404);
+        }
+    }
+    /**
+     * Memproses pengembalian satu atau lebih tabung dengan logika denda dinamis.
+     */
+    public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'detail_kembali' => 'required|array|min:1',
-            'detail_kembali.*.id_tabung' => 'required|exists:tabungs,id_tabung',
-            'detail_kembali.*.kondisi' => 'required|in:baik,rusak,hilang',
+            'items_kembali' => 'required|array|min:1',
+            'items_kembali.*.kode_tabung' => 'required|string|exists:tabungs,kode_tabung',
+            'items_kembali.*.kondisi' => 'required|string|in:baik,rusak,hilang',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Validasi gagal.', 'errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'message' => 'Validasi gagal.', 'data' => ['errors' => $validator->errors()]], 422);
         }
+
+        $hasilPengembalian = [];
 
         DB::beginTransaction();
         try {
-            $peminjaman = Peminjaman::with('akun.deposit')->findOrFail($id_peminjaman);
-            $akun = $peminjaman->akun;
-            $deposit = $akun->deposit;
+            foreach ($request->items_kembali as $item) {
+                $tabung = Tabung::where('kode_tabung', $item['kode_tabung'])->firstOrFail();
 
-            if (!$peminjaman->status_pinjam) {
-                throw new Exception("Peminjaman ini sudah selesai dan tidak bisa diproses lagi.");
-            }
+                // 1. Cari transaksi peminjaman terakhir yang belum dikembalikan
+                $transaksiDetailPeminjaman = TransaksiDetail::where('id_tabung', $tabung->id_tabung)
+                    ->whereHas('jenisTransaksiDetail', function ($q) {
+                        $q->where('jenis_transaksi', 'peminjaman');
+                    })
+                    ->whereDoesntHave('pengembalian')
+                    ->latest()
+                    ->first();
 
-            $tagihanBaru = null;
+                if (!$transaksiDetailPeminjaman) {
+                    throw new Exception("Tidak ditemukan transaksi peminjaman aktif untuk tabung {$item['kode_tabung']}.");
+                }
 
-            // 1. Buat catatan Denda untuk Kerusakan/Kehilangan (jika ada)
-            foreach ($request->detail_kembali as $item) {
-                if ($item['kondisi'] === 'rusak' || $item['kondisi'] === 'hilang') {
-                    $tabung = Tabung::with('jenisTabung')->find($item['id_tabung']);
-                    $dendaKerusakan = $tabung->jenisTabung->nilai_deposit; // Denda = nilai jaminan tabung
+                $transaksiInduk = $transaksiDetailPeminjaman->transaksi;
+                $tanggalPinjamAwal = Carbon::parse($transaksiInduk->tanggal_transaksi);
 
-                    Denda::create([
-                        'id_peminjaman' => $peminjaman->id_peminjaman,
-                        'id_akun' => $akun->id_akun,
-                        'jenis_denda' => $item['kondisi'],
-                        'jumlah_denda' => $dendaKerusakan,
+                // 2. Cari aktivitas isi ulang terakhir untuk me-reset timer denda
+                $isiUlangTerakhir = TransaksiDetail::where('id_tabung', $tabung->id_tabung)
+                    ->whereHas('jenisTransaksiDetail', function ($q) {
+                        $q->where('jenis_transaksi', 'isi_ulang');
+                    })
+                    ->whereHas('transaksi', function ($q) use ($tanggalPinjamAwal) {
+                        $q->where('tanggal_transaksi', '>=', $tanggalPinjamAwal);
+                    })
+                    ->latest('created_at')
+                    ->first();
+
+                $tanggalAktivitasTerakhir = $isiUlangTerakhir
+                    ? Carbon::parse($isiUlangTerakhir->transaksi->tanggal_transaksi)
+                    : $tanggalPinjamAwal;
+
+                // 3. Ambil nilai deposit
+                $transaksiDetailDeposit = TransaksiDetail::where('id_transaksi', $transaksiInduk->id_transaksi)
+                    ->whereHas('jenisTransaksiDetail', function ($q) {
+                        $q->where('jenis_transaksi', 'deposit');
+                    })->first();
+
+                $nilaiDeposit = $transaksiDetailDeposit ? $transaksiDetailDeposit->harga : 0;
+
+                // 4. Hitung Denda Keterlambatan (setelah 30 hari)
+                $selisihHari = $tanggalAktivitasTerakhir->diffInDays(now());
+                $bulanKeterlambatan = 0;
+                if ($selisihHari > 30) {
+                    $bulanKeterlambatan = floor(($selisihHari - 1) / 30);
+                }
+                $dendaKeterlambatan = $bulanKeterlambatan * self::DENDA_KETERLAMBATAN_PER_BULAN;
+
+                // 5. Tentukan Kondisi Akhir Tabung
+                $kondisiAkhir = $item['kondisi'];
+                // --- [LOGIKA BARU] Cek jika denda keterlambatan menghabiskan deposit ---
+                if ($nilaiDeposit > 0 && $dendaKeterlambatan >= $nilaiDeposit) {
+                    // Jika denda keterlambatan sudah melebihi nilai deposit,
+                    // maka tabung secara otomatis dianggap hilang.
+                    $kondisiAkhir = 'hilang';
+                }
+                // --------------------------------------------------------------------
+
+                // 6. Hitung Denda Kondisi Tabung & Tentukan Status Baru
+                $dendaKondisi = 0;
+                $statusTabungBaruId = 1; // Default 'tersedia'
+                if ($kondisiAkhir === 'rusak' || $kondisiAkhir === 'hilang') {
+                    $dendaKondisi = $tabung->jenisTabung->nilai_deposit;
+                    $statusTabungBaruId = ($kondisiAkhir === 'rusak') ? 3 : 4; // Asumsi 3=rusak, 4=hilang
+                }
+
+                // 7. Kalkulasi Keuangan (termasuk biaya admin)
+                $totalDenda = $dendaKeterlambatan + $dendaKondisi;
+                $totalPotongan = $totalDenda + self::BIAYA_ADMINISTRASI;
+                $sisaDeposit = $nilaiDeposit - $totalPotongan;
+                $bayarTagihan = $sisaDeposit < 0 ? abs($sisaDeposit) : 0;
+                $sisaDepositFinal = max(0, $sisaDeposit);
+
+                // 8. Buat Catatan Pengembalian
+                $pengembalian = Pengembalian::create([
+                    'id_tabung' => $tabung->id_tabung,
+                    'id_transaksi_detail' => $transaksiDetailPeminjaman->id_transaksi_detail,
+                    'tanggal_pinjam' => $transaksiInduk->tanggal_transaksi,
+                    'waktu_pinjam' => $transaksiInduk->waktu_transaksi,
+                    'tanggal_pengembalian' => now()->toDateString(),
+                    'waktu_pengembalian' => now()->toTimeString(),
+                    'jumlah_keterlambatan_bulan' => $bulanKeterlambatan,
+                    'total_denda' => $totalDenda,
+                    'deposit' => $nilaiDeposit,
+                    'denda_kondisi_tabung' => $dendaKondisi,
+                    'id_status_tabung' => $statusTabungBaruId,
+                    'sisa_deposit' => $sisaDepositFinal,
+                    'bayar_tagihan' => $bayarTagihan,
+                ]);
+
+                // 9. Update Status Tabung
+                $tabung->update(['id_status_tabung' => $statusTabungBaruId]);
+
+                // 10. Jika ada kekurangan (bayar_tagihan), buat transaksi utang baru
+                if ($bayarTagihan > 0) {
+                    $transaksiDenda = Transaksi::create([
+                        'id_orang' => $transaksiInduk->id_orang,
+                        'total_transaksi' => $bayarTagihan,
+                        'status_valid' => true,
+                        'tanggal_transaksi' => now()->toDateString(),
+                        'waktu_transaksi' => now()->toTimeString(),
+                    ]);
+                    // Asumsi ID jenis transaksi denda = 4
+                    TransaksiDetail::create([
+                        'id_transaksi' => $transaksiDenda->id_transaksi,
+                        'id_tabung' => $tabung->id_tabung,
+                        'id_jenis_transaksi_detail' => 4,
+                        'harga' => $bayarTagihan,
                     ]);
                 }
-            }
 
-            // 2. [PERBAIKAN] Kumpulkan SEMUA denda yang terkait dengan peminjaman ini
-            // Ini akan mencakup denda inaktivitas (dari cron job) dan denda kerusakan (dari langkah 1)
-            $totalDenda = Denda::where('id_peminjaman', $peminjaman->id_peminjaman)->sum('jumlah_denda');
-
-            // 3. Potong Saldo Deposit
-            $saldoAwal = $deposit ? $deposit->saldo : 0;
-            $totalPotongan = $totalDenda + self::BIAYA_ADMINISTRASI;
-
-            if ($totalDenda > 0) {
-                RiwayatDeposit::create([
-                    'id_deposit' => $deposit->id_deposit,
-                    'jenis_aktivitas' => 'potong_denda',
-                    'jumlah' => $totalDenda,
-                    'keterangan' => 'Potongan akumulasi denda untuk peminjaman #' . $peminjaman->id_peminjaman,
-                ]);
-            }
-            RiwayatDeposit::create([
-                'id_deposit' => $deposit->id_deposit,
-                'jenis_aktivitas' => 'potong_biaya_admin',
-                'jumlah' => self::BIAYA_ADMINISTRASI,
-                'keterangan' => 'Biaya administrasi pengembalian peminjaman #' . $peminjaman->id_peminjaman,
-            ]);
-
-            // Cek apakah deposit cukup
-            if ($saldoAwal >= $totalPotongan) {
-                $deposit->decrement('saldo', $totalPotongan);
-            } else {
-                // Jika deposit tidak cukup, habiskan saldo dan buat tagihan baru
-                $sisaUtang = $totalPotongan - $saldoAwal;
-                if ($deposit) {
-                    $deposit->update(['saldo' => 0]);
-                }
-
-                $tagihanBaru = Tagihan::create([
-                    'id_akun' => $akun->id_akun,
-                    'total_tagihan' => $sisaUtang,
-                    'sisa' => $sisaUtang,
-                    'status_tagihan' => 'belum_lunas',
-                ]);
-            }
-
-            // 4. Hitung Sisa Deposit yang akan Dikembalikan
-            $sisaDepositDikembalikan = $deposit ? $deposit->fresh()->saldo : 0;
-
-            // 5. Buat Catatan Pengembalian
-            $pengembalian = Pengembalian::create([
-                'id_peminjaman' => $peminjaman->id_peminjaman,
-                'tanggal_kembali' => now(),
-            ]);
-
-            foreach ($request->detail_kembali as $item) {
-                DetailPengembalian::create([
-                    'id_pengembalian' => $pengembalian->id_pengembalian,
-                    'id_tabung' => $item['id_tabung'],
-                    'kondisi_tabung' => $item['kondisi'],
-                ]);
-                // 6. Update Status Tabung menjadi 'tersedia'
-                Tabung::find($item['id_tabung'])->update(['id_status_tabung' => 1]); // Asumsi 1 = 'tersedia'
-            }
-
-            // 7. Update Status Peminjaman menjadi 'selesai'
-            $peminjaman->update(['status_pinjam' => false]);
-
-            // Jika ada sisa deposit, catat sebagai pengembalian dana dan nolkan saldo
-            if ($sisaDepositDikembalikan > 0) {
-                RiwayatDeposit::create([
-                    'id_deposit' => $deposit->id_deposit,
-                    'jenis_aktivitas' => 'pengembalian_dana',
-                    'jumlah' => $sisaDepositDikembalikan,
-                    'keterangan' => 'Pengembalian sisa deposit tunai.',
-                ]);
-                $deposit->update(['saldo' => 0]);
+                $hasilPengembalian[] = $pengembalian;
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Proses pengembalian berhasil diselesaikan.',
-                'data' => [
-                    'saldo_awal_deposit' => $saldoAwal,
-                    'total_denda' => $totalDenda,
-                    'biaya_administrasi' => self::BIAYA_ADMINISTRASI,
-                    'total_potongan' => $totalPotongan,
-                    'sisa_deposit_dikembalikan' => $sisaDepositDikembalikan,
-                    'tagihan_baru' => $tagihanBaru,
-                ]
+                'message' => 'Proses pengembalian berhasil.',
+                'data'    => $hasilPengembalian
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Gagal memproses pengembalian: ' . $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses pengembalian: ' . $e->getMessage(),
+                'data'    => null
+            ], 500);
         }
     }
 }

@@ -59,7 +59,10 @@ class Mitra extends Model
     public function orangs()
     {
         return $this->belongsToMany(Orang::class, 'orang_mitras', 'id_mitra', 'id_orang')
-            ->withPivot('status_valid')
+            ->withPivot('id_orang_mitra', 'status_valid')
             ->withTimestamps();
     }
+
+
+
 }

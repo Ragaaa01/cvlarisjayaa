@@ -24,7 +24,7 @@ class Akun extends Authenticatable
      *
      * @var string
      */
-    protected $primaryKey = 'id_akuns';
+    protected $primaryKey = 'id_akun';
 
     /**
      * Atribut yang dapat diisi secara massal.

@@ -20,9 +20,9 @@ return new class extends Migration
             $table->foreignId('id_status_tabung')->comment('Status tabung setelah dikembalikan')->constrained('status_tabungs', 'id_status_tabung');
 
             // Data waktu
-            $table->timestamp('tanggal_pinjam');
+            $table->date('tanggal_pinjam');
             $table->time('waktu_pinjam');
-            $table->timestamp('tanggal_pengembalian')->nullable();
+            $table->date('tanggal_pengembalian')->nullable();
             $table->time('waktu_pengembalian')->nullable();
 
             // Data kalkulasi denda

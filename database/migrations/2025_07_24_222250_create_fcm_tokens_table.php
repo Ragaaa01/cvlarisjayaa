@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('id_fcm_token');
 
             // Foreign key ke tabel akuns
-            $table->foreignId('id_akun')->constrained('akuns', 'id_akuns')->onDelete('cascade');
+            $table->foreignId('id_akun')->constrained('akuns', 'id_akun')->onDelete('cascade');
 
             $table->text('token');
             $table->string('nama_perangkat')->nullable();
