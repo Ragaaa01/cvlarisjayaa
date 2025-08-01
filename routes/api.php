@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\MidtransWebhookController;
 use App\Http\Controllers\Api\Pelanggan\DashboardPelangganController;
 use App\Http\Controllers\Api\Pelanggan\DepositController;
+use App\Http\Controllers\Api\Pelanggan\NotifikasiPelangganController;
 use App\Http\Controllers\Api\Pelanggan\PesananController;
 use App\Http\Controllers\Api\Pelanggan\ProdukController;
 use App\Http\Controllers\Api\Pelanggan\ProfilPelangganController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Api\Pelanggan\RiwayatController;
 use App\Http\Controllers\Api\Pelanggan\TagihanPelangganController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 
 
 
@@ -154,6 +156,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/tagihan/rekapitulasi', [TagihanPelangganController::class, 'getRekapitulasi']);
         Route::post('/tagihan/bayar', [TagihanPelangganController::class, 'bayar']);
+
+        Route::get('/notifikasi', [NotifikasiPelangganController::class, 'index']);
+        Route::post('/notifikasi/{id_notifikasi}/baca', [NotifikasiPelangganController::class, 'tandaiDibaca']);
 
         // Grup untuk semua rute riwayat
         Route::prefix('riwayat')->group(function () {
