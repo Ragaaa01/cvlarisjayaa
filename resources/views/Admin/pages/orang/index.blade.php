@@ -1,290 +1,308 @@
 @extends('admin.layouts.base')
 @section('title', 'Data Orang')
 
-@section('content')
-<div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Data Orang</h1>
-
-    <!-- Notifikasi -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-    @if(session('warning'))
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            {{ session('warning') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-    @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @foreach($errors->all() as $e)
-                <div>{{ $e }}</div>
-            @endforeach
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-
-    <!-- Tabel Data -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <div class="d-flex justify-content-between w-100">
-                <a href="{{ route('admin.orang.create') }}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus mr-1"></i> Tambah Data
-                </a>
-                <div class="dropdown">
-                    <button class="btn btn-success btn-sm dropdown-toggle" type="button" id="exportDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-download mr-1"></i> Export Data
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="exportDropdown">
-                        <a class="dropdown-item" href="{{ route('admin.orang.export.excel') }}" id="exportExcel">Export ke Excel</a>
-                        <a class="dropdown-item" href="{{ route('admin.orang.export.pdf') }}" id="exportPdf">Export ke PDF</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
-                    <thead class="background">
-                        <tr>
-                            <th class="text-center">No</th>
-                            <th>Nama Lengkap</th>
-                            <th>NIK</th>
-                            <th>No Telepon</th>
-                            <th>Alamat</th>
-                            <th>Perusahaan</th>
-                            <th class="text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($orangs as $d)
-                            <tr>
-                                <td class="text-center">{{ $orangs->firstItem() + $loop->index }}</td>
-                                <td>{{ $d->nama_lengkap }}</td>
-                                <td>{{ $d->nik }}</td>
-                                <td>{{ $d->no_telepon }}</td>
-                                <td>{{ $d->alamat }}</td>
-                                <td>
-                                    @if($d->perusahaan->isNotEmpty())
-                                        {{ $d->perusahaan->pluck('nama_perusahaan')->implode(', ') }}
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    <div class="d-inline-flex">
-                                        <a href="{{ route('admin.orang.show', $d->id_orang) }}" class="btn btn-sm btn-info mr-1" title="Lihat Detail">
-                                            <i class="fas fa-eye action-icon"></i>
-                                        </a>
-                                        <a href="{{ route('admin.orang.edit', $d->id_orang) }}" class="btn btn-sm btn-warning mr-1" title="Edit Data">
-                                            <i class="fas fa-edit action-icon"></i>
-                                        </a>
-                                        <form method="POST" action="{{ route('admin.orang.destroy', $d->id_orang) }}" onsubmit="return confirm('Yakin ingin hapus?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="btn btn-sm btn-danger" title="Hapus Data">
-                                                <i class="fas fa-trash-alt action-icon"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center">Tidak ada data.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            <!-- Paginasi -->
-            <div class="d-flex justify-content-center mt-3">
-                {{ $orangs->links('pagination::bootstrap-4') }}
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Debugging dependensi
-        console.log('jQuery:', typeof $ !== 'undefined' ? 'Loaded' : 'Not Loaded');
-        console.log('Popper:', typeof Popper !== 'undefined' ? 'Loaded' : 'Not Loaded');
-        console.log('Bootstrap Dropdown:', typeof $.fn.dropdown !== 'undefined' ? 'Loaded' : 'Not Loaded');
-
-        // Notifikasi SweetAlert2 untuk session success/warning/error
-        @if(session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: 'Sukses!',
-                text: '{{ session('success') }}',
-                timer: 3000,
-                showConfirmButton: false
-            });
-        @elseif(session('warning'))
-            Swal.fire({
-                icon: 'warning',
-                title: 'Peringatan!',
-                text: '{{ session('warning') }}',
-                timer: 3000,
-                showConfirmButton: false
-            });
-        @elseif($errors->any())
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal!',
-                text: '{{ $errors->first() }}',
-                timer: 3000,
-                showConfirmButton: false
-            });
-        @endif
-
-        // Logika untuk export Excel dan PDF
-        $('#exportExcel').on('click', function(e) {
-            e.preventDefault();
-            Swal.fire({
-                title: 'Mengunduh...',
-                text: 'Sedang memproses file Excel.',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            fetch(e.target.href, {
-                method: 'GET',
-                credentials: 'same-origin',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
-            }).then(response => {
-                if (!response.ok) throw new Error('Gagal mengunduh Excel');
-                return response.blob();
-            }).then(blob => {
-                Swal.close();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'Data_Orang_' + new Date().toISOString().replace(/:/g, '-') + '.xlsx';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-            }).catch(error => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal!',
-                    text: 'Gagal mengunduh file Excel. Silakan coba lagi.',
-                    timer: 3000,
-                    showConfirmButton: false
-                });
-            });
-        });
-
-        $('#exportPdf').on('click', function(e) {
-            e.preventDefault();
-            Swal.fire({
-                title: 'Mengunduh...',
-                text: 'Sedang memproses file PDF.',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            fetch(e.target.href, {
-                method: 'GET',
-                credentials: 'same-origin',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
-            }).then(response => {
-                if (!response.ok) throw new Error('Gagal mengunduh PDF');
-                return response.blob();
-            }).then(blob => {
-                Swal.close();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'Data_Orang_' + new Date().toISOString().replace(/:/g, '-') + '.pdf';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-            }).catch(error => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal!',
-                    text: 'Gagal mengunduh file PDF. Silakan coba lagi.',
-                    timer: 3000,
-                    showConfirmButton: false
-                });
-            });
-        });
-
-        // Debugging untuk dropdown
-        $('#exportDropdown').on('click', function() {
-            console.log('Tombol Export Data diklik');
-            if ($('.dropdown-menu').is(':visible')) {
-                console.log('Dropdown terbuka');
-            } else {
-                console.log('Dropdown tidak terbuka');
-            }
-        });
-    });
-</script>
-
+@section('styles')
 <style>
     .table th, .table td {
         vertical-align: middle;
         font-size: 0.9rem;
     }
+    .table th {
+        text-align: center;
+    }
     .table-hover tbody tr:hover {
         background-color: #f8f9fa;
+    }
+    thead.background {
+        background-color: #014A7F !important;
+        color: white;
+    }
+    .btn-custom {
+        background-color: #014A7F !important;
+        color: white !important;
+        border: none;
+    }
+    .btn-custom:hover {
+        background-color: #001B36 !important;
+        color: white !important;
     }
     .btn-sm {
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
+        width: 32px;
+        height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+    .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .table {
+        min-width: 1000px;
     }
     .action-icon {
         font-size: 0.85rem;
         line-height: 1;
     }
-    .background {
+    .action-column {
+        position: sticky;
+        right: 0;
+        background-color: #fff;
+        z-index: 1;
+        box-shadow: -2px 0 2px rgba(0,0,0,0.1);
+        min-width: 120px;
+    }
+    .action-header {
+        position: sticky;
+        right: 0;
+        background-color: #014A7F !important;
+        color: white;
+        z-index: 2;
+        box-shadow: -2px 0 2px rgba(0,0,0,0.1);
+        min-width: 120px;
+    }
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 2px;
+        padding: 0 5px;
+    }
+    .address-column {
+        max-width: 300px;
+        overflow-wrap: break-word;
+        white-space: normal;
+        word-break: break-word;
+    }
+    /* Tambahan CSS untuk jarak paginasi dan pemusatan */
+    .dataTables_wrapper .dataTables_paginate {
+        margin-top: 20px !important; /* Jarak atas paginasi */
+        margin-bottom: 10px !important; /* Jarak bawah paginasi */
+        display: flex;
+        justify-content: flex-end; /* Paginasi rata kanan */
+        align-items: center;
+        padding-right: 15px; /* Sesuaikan dengan padding tabel untuk sejajar dengan garis */
+    }
+    .dataTables_paginate .pagination {
+        display: inline-flex; /* Gunakan inline-flex untuk menjaga tombol tetap rapat */
+        justify-content: center;
+        align-items: center;
+    }
+    /* Styling untuk paginasi */
+    .paginate_button {
+        margin: 0 2px !important;
+        padding: 5px 10px !important;
+        border: 1px solid #ddd !important;
+        border-radius: 3px !important;
+        text-decoration: none !important;
+        color: #333 !important;
+        background-color: #fff !important;
+        cursor: pointer;
+    }
+    .paginate_button.current {
         background-color: #014A7F !important;
         color: white !important;
+        border: 1px solid #014A7F !important;
     }
-    .btn-primary {
-        background-color: #014A7F !important;
-        border-color: #014A7F !important;
+    .paginate_button:hover:not(.disabled) {
+        background-color: #f8f9fa !important;
+        color: #333 !important;
     }
-    .btn-primary:hover {
-        background-color: #001B36 !important;
-        border-color: #001B36 !important;
+    .paginate_button.disabled {
+        color: #ccc !important;
+        cursor: not-allowed !important;
+        border: 1px solid #ddd !important;
+        background-color: #fff !important;
     }
-    .btn-success {
-        background-color: #28a745 !important;
-        border-color: #28a745 !important;
+    .ellipsis {
+        margin: 0 2px !important;
+        padding: 5px 10px !important;
+        color: #333 !important;
+        cursor: default !important;
     }
-    .btn-success:hover {
-        background-color: #218838 !important;
-        border-color: #218838 !important;
+    /* Styling untuk teks halaman di bawah paginasi */
+    .dataTables_info_custom {
+        text-align: center;
+        margin-top: 5px !important;
+        font-size: 0.9rem;
+        color: #333;
+        width: 100%; /* Pastikan teks juga terpusat */
     }
-    .dropdown-menu {
-        min-width: 10rem;
-        margin: 0.125rem 0 0;
-        border: 1px solid rgba(0,0,0,0.15);
-        border-radius: 0.25rem;
+    /* Styling untuk input pencarian */
+    .dataTables_filter {
+        margin-bottom: 1rem;
+        text-align: right;
+    }
+    .dataTables_filter input {
+        width: 200px;
+        display: inline-block;
     }
 </style>
+@endsection
+
+@section('content')
+<h2>Data Orang</h2>
+<div class="card shadow mt-4 mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <div>
+            <a href="{{ route('admin.orang.create') }}" class="btn btn-custom">
+                <i class="fas fa-plus mr-1"></i> Tambah Data
+            </a>
+        </div>
+        <div>
+            <a href="{{ route('admin.orang.export.excel') }}" class="btn btn-success">
+                <i class="fas fa-file-excel mr-1"></i> Export Excel
+            </a>
+            <a href="{{ route('admin.orang.export.pdf') }}" class="btn btn-danger">
+                <i class="fas fa-file-pdf mr-1"></i> Export PDF
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
+                <thead class="background">
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Lengkap</th>
+                        <th>NIK</th>
+                        <th>No Telepon</th>
+                        <th>Alamat</th>
+                        <th class="action-header">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <!-- Elemen untuk teks halaman -->
+        <div class="dataTables_info_custom" id="dataTable_info_custom"></div>
+    </div>
+</div>
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        var table = $('#dataTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route("admin.orang.index") }}'
+            },
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { data: 'nama_lengkap', name: 'nama_lengkap' },
+                { data: 'nik', name: 'nik' },
+                { data: 'no_telepon', name: 'no_telepon' },
+                { data: 'alamat', name: 'alamat', className: 'address-column' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'action-column' }
+            ],
+            responsive: true,
+            scrollX: true,
+            pageLength: 10,
+            ordering: false,
+            lengthChange: false,
+            language: {
+                url: '{{ asset("assets/datatables/id.json") }}'
+            },
+            pagingType: 'simple_numbers', // Gunakan simple_numbers untuk Previous dan Next
+            drawCallback: function(settings) {
+                var api = this.api();
+                var pageInfo = api.page.info();
+                var currentPage = pageInfo.page + 1; // Halaman saat ini (1-based index)
+                var totalPages = pageInfo.pages;
+                var maxPagesToShow = 3; // Maksimal 3 angka ditampilkan
+
+                
+                // Ambil elemen paginasi
+                var $pagination = $('.dataTables_paginate .pagination');
+                $pagination.find('.paginate_button').not('.previous, .next').remove(); // Hapus nomor halaman default
+
+                // Tambahkan tombol "First" jika bukan di halaman pertama
+                if (currentPage > 1) {
+                    var $firstButton = $('<a>', {
+                        class: 'paginate_button',
+                        href: '#',
+                        text: '« First'
+                    }).on('click', function(e) {
+                        e.preventDefault();
+                        api.page('first').draw('page');
+                    });
+                    $pagination.find('.paginate_button.previous').after($firstButton);
+                }
+
+                // Tentukan nomor halaman yang akan ditampilkan
+                var startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                var endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+                // Sesuaikan startPage jika endPage mencapai batas
+                if (endPage - startPage < maxPagesToShow - 1) {
+                    startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                }
+
+                // Tambahkan elipsis di awal jika startPage > 2
+                if (startPage > 2) {
+                    var $ellipsisStart = $('<span>', {
+                        class: 'ellipsis',
+                        text: '...'
+                    });
+                    $pagination.find('.paginate_button.previous').after($ellipsisStart);
+                }
+
+                // Tambahkan nomor halaman
+                for (var i = startPage; i <= endPage; i++) {
+                    var $pageButton = $('<a>', {
+                        class: 'paginate_button ' + (i === currentPage ? 'current' : ''),
+                        href: '#',
+                        text: i
+                    }).on('click', function(e) {
+                        e.preventDefault();
+                        api.page(parseInt($(this).text()) - 1).draw('page');
+                    });
+                    $pagination.find('.paginate_button.next').before($pageButton);
+                }
+
+                // Tambahkan elipsis di akhir jika endPage < totalPages - 1
+                if (endPage < totalPages - 1) {
+                    var $ellipsisEnd = $('<span>', {
+                        class: 'ellipsis',
+                        text: '...'
+                    });
+                    $pagination.find('.paginate_button.next').before($ellipsisEnd);
+                }
+
+                // Tambahkan tombol "Last" jika bukan di halaman terakhir
+                if (currentPage < totalPages) {
+                    var $lastButton = $('<a>', {
+                        class: 'paginate_button',
+                        href: '#',
+                        text: 'Last »'
+                    }).on('click', function(e) {
+                        e.preventDefault();
+                        api.page('last').draw('page');
+                    });
+                    $pagination.find('.paginate_button.next').before($lastButton);
+                }
+            }
+        });
+    });
+</script>
 @endpush
+@endsection

@@ -2,36 +2,36 @@
 @section('title', 'Detail Orang')
 
 @section('content')
-<div class="container-fluid">
-    <h1 class="mt-4">Detail Orang</h1>
-    <div class="card mb-4">
-        <div class="cardo-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Nama Lengkap</h5>
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Detail Data Orang</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label><strong>Nama Lengkap</strong></label>
                     <p>{{ $orang->nama_lengkap }}</p>
                 </div>
-                <div class="col-md-6">
-                    <h5>NIK</h5>
-                    <p>{{ $orang->nik }}</p>
+                <div class="form-group">
+                    <label><strong>NIK</strong></label>
+                    <p>{{ $orang->nik ?? '-' }}</p>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>No Telepon</h5>
+                <div class="form-group">
+                    <label><strong>No Telepon</strong></label>
                     <p>{{ $orang->no_telepon }}</p>
                 </div>
-                <div class="col-md-6">
-                    <h5>Alamat</h5>
-                    <p>{{ $orang->alamat }}</p>
+                <div class="form-group">
+                    <label><strong>Alamat</strong></label>
+                    <p>{{ $orang->alamat ?? '-' }}</p>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <a href="{{ route('admin.orang.edit', $orang->id_orang) }}" class="btn btn-warning">Edit</a>
-                    <a href="{{ route('admin.orang.index') }}" class="btn btn-secondary">Kembali</a>
-                </div>
-            </div>
+        </div>
+        <div class="form-group">
+            <a href="{{ route('admin.orang.edit', $orang->id_orang) }}" class="btn btn-warning btn-sm">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="{{ route('admin.orang.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
         </div>
     </div>
 </div>

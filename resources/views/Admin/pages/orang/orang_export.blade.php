@@ -1,84 +1,139 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <title>Data Orang</title>
     <style>
+        @page {
+            margin: 20mm 15mm;
+        }
         body {
-            font-family: DejaVu Sans, sans-serif;
-            margin: 20px;
+            font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif;
             font-size: 10pt;
+            color: #333333;
+            line-height: 1.4;
+            margin: 0;
         }
-        h1 {
+        .header {
+            position: fixed;
+            top: -10mm;
+            left: 0;
+            right: 0;
+            height: 15mm;
             text-align: center;
+            border-bottom: 1px solid #d1d1d1;
+            padding-bottom: 5mm;
+        }
+        .header h1 {
+            font-size: 14pt;
             color: #014A7F;
-            margin-bottom: 20px;
+            margin: 0;
+            font-weight: bold;
         }
-        .export-info {
-            text-align: center;
-            font-size: 9pt;
-            color: #333;
-            margin-bottom: 15px;
+        .header .subtitle {
+            font-size: 8pt;
+            color: #666666;
+            margin-top: 2mm;
         }
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20mm;
             font-size: 9pt;
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 6px;
+            border: 0.5pt solid #999999;
+            padding: 3mm 4mm;
+            vertical-align: top;
             text-align: left;
-            word-wrap: break-word;
-            max-width: 200px;
         }
         th {
             background-color: #014A7F;
             color: white;
             font-weight: bold;
+            text-align: center;
         }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
- çe
+        td {
+            background-color: #ffffff;
         }
-        @page {
-            size: A4 landscape;
-            margin: 20mm;
+        .no-column {
+            width: 8%;
+            text-align: center;
+        }
+        .nama-column {
+            width: 25%;
+        }
+        .nik-column {
+            width: 20%;
+        }
+        .telepon-column {
+            width: 17%;
+        }
+        .alamat-column {
+            width: 30%;
+            max-width: 180px;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+        }
+        .footer {
+            position: fixed;
+            bottom: -10mm;
+            left: 0;
+            right: 0;
+            height: 15mm;
+            text-align: center;
+            font-size: 8pt;
+            color: #666666;
+            border-top: 1px solid #d1d1d1;
+            padding-top: 3mm;
+        }
+        .footer .date {
+            margin-bottom: 2mm;
+        }
+        .footer .page-number:after {
+            content: "Halaman " counter(page) " dari " counter(pages);
+        }
+        /* Alternating row colors for better readability */
+        tr:nth-child(even) td {
+            background-color: #f9f9f9;
+        }
+        /* Hover effect simulation for better contrast */
+        tr:hover td {
+            background-color: #f0f0f0;
         }
     </style>
 </head>
 <body>
-    <h1>Data Orang</h1>
-    <div class="export-info">
-        Dibuat pada: {{ date('d-m-Y H:i:s') }}
+    <div class="header">
+        <h1>Data Orang</h1>
+        <div class="subtitle">Laporan Data Perorangan - {{ date('d M Y') }}</div>
     </div>
     <table>
         <thead>
             <tr>
-                <th style="width: 5%;">Nomor</th>
-                <th style="width: 20%;">Nama Lengkap</th>
-                <th style="width: 15%;">NIK</th>
-                <th style="width: 15%;">No Telepon</th>
-                <th style="width: 25%;">Alamat</th>
-                <th style="width: 20%;">Perusahaan</th>
+                <th class="no-column">No</th>
+                <th class="nama-column">Nama Lengkap</th>
+                <th class="nik-column">NIK</th>
+                <th class="telepon-column">No Telepon</th>
+                <th class="alamat-column">Alamat</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($orangs as $index => $orang)
+            @foreach ($orangs as $index => $orang)
                 <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td>{{ $orang->nama_lengkap }}</td>
-                    <td>{{ $orang->nik }}</td>
-                    <td>{{ $orang->no_telepon }}</td>
-                    <td>{{ $orang->alamat }}</td>
-                    <td>{{ $orang->perusahaan->isNotEmpty() ? $orang->perusahaan->pluck('nama_perusahaan')->implode(', ') : '-' }}</td>
+                    <td class="no-column">{{ $index + 1 }}</td>
+                    <td class="nama-column">{{ $orang->nama_lengkap }}</td>
+                    <td class="nik-column">{{ $orang->nik ?? '-' }}</td>
+                    <td class="telepon-column">{{ $orang->no_telepon }}</td>
+                    <td class="alamat-column">{{ $orang->alamat }}</td>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="6" style="text-align: center;">Tidak ada data orang.</td>
-                </tr>
-            @endforelse
+            @endforeach
         </tbody>
     </table>
+    <div class="footer">
+        <div class="date">Dicetak pada: {{ date('d-m-Y H:i:s') }}</div>
+        <div class="page-number"></div>
+    </div>
 </body>
 </html>

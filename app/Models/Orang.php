@@ -81,4 +81,9 @@ class Orang extends Model
     {
         return $this->hasMany(Pembayaran::class, 'id_orang');
     }
+
+    public function orangMitras()
+{
+    return $this->hasMany(OrangMitra::class, 'id_orang');
+}
 }
