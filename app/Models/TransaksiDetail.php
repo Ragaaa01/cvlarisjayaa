@@ -60,4 +60,9 @@ class TransaksiDetail extends Model
     {
         return $this->belongsTo(JenisTransaksiDetail::class, 'id_jenis_transaksi_detail');
     }
+
+    public function pengembalian()
+    {
+        return $this->hasOne(Pengembalian::class, 'id_transaksi_detail');
+    }
 }

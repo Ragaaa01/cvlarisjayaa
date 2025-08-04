@@ -50,8 +50,8 @@ class Pengembalian extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'tanggal_pinjam' => 'datetime',
-        'tanggal_pengembalian' => 'datetime',
+        'tanggal_pinjam' => 'date',
+        'tanggal_pengembalian' => 'date',
     ];
 
     /**

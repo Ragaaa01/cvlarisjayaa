@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('id_notifikasi');
 
             // Foreign key ke tabel akuns
-            $table->foreignId('id_akun')->constrained('akuns', 'id_akuns')->onDelete('cascade');
+            $table->foreignId('id_akun')->constrained('akuns', 'id_akun')->onDelete('cascade');
 
             // Foreign key ke tabel notifikasi_templates
             $table->foreignId('id_template')->constrained('notifikasi_templates', 'id_notifikasi_template');

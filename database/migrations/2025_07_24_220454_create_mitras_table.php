@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id('id_mitra');
             $table->string('nama_mitra');
 
-            // Foreign key ke tabel kelurahans (bisa null jika alamat belum lengkap)
             $table->foreignId('id_kelurahan')->nullable()->constrained('kelurahans', 'id_kelurahan');
 
             $table->text('alamat_mitra')->nullable();

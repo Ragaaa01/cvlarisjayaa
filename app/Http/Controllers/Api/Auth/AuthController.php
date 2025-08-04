@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Akun;
+use App\Models\Orang;
 use App\Models\Perorangan;
 use App\Models\Tagihan;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,137 +19,240 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
+    // public function register(Request $request)
+    // {
+    //     $messages = [
+    //         'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+    //         'nik.required' => 'NIK wajib diisi.',
+    //         'nik.size' => 'NIK harus terdiri dari 16 digit.',
+    //         'nik.unique' => 'NIK sudah terdaftar.',
+    //         'no_telepon.required' => 'Nomor telepon wajib diisi.',
+    //         'no_telepon.unique' => 'Nomor telepon sudah terdaftar.',
+    //         'id_kelurahan.required' => 'Kelurahan wajib dipilih.',
+    //         'alamat.required' => 'Alamat wajib diisi.',
+    //         'email.required' => 'Email wajib diisi.',
+    //         'email.email' => 'Format email tidak valid.',
+    //         'email.unique' => 'Email sudah terdaftar.',
+    //         'password.required' => 'Password wajib diisi.',
+    //         'password.min' => 'Password minimal harus 6 karakter.',
+    //         'password.confirmed' => 'Konfirmasi password tidak cocok.',
+    //     ];
+
+    //     $validator = Validator::make($request->all(), [
+    //         'nama_lengkap' => 'required|string|max:255',
+    //         'nik' => 'required|string|size:16|unique:orangs,nik',
+    //         'no_telepon' => 'required|string|unique:orangs,no_telepon|max:15',
+    //         'id_kelurahan' => 'required|exists:kelurahans,id_kelurahan',
+    //         'alamat' => 'required|string',
+    //         'email' => 'required|string|email|max:255|unique:akuns,email',
+    //         'password' => 'required|string|min:6|confirmed',
+    //     ], $messages);
+
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Validasi gagal.',
+    //             'data'    => ['errors' => $validator->errors()]
+    //         ], 422);
+    //     }
+
+    //     DB::beginTransaction();
+    //     try {
+    //         $orang = Orang::create([
+    //             'nama_lengkap' => $request->nama_lengkap,
+    //             'nik' => $request->nik,
+    //             'no_telepon' => $request->no_telepon,
+    //             'id_kelurahan' => $request->id_kelurahan,
+    //             'alamat' => $request->alamat,
+    //         ]);
+
+    //         // Role 'pelanggan' diasumsikan memiliki id_role = 2
+    //         $akun = Akun::create([
+    //             'id_role' => 2,
+    //             'id_orang' => $orang->id_orang,
+    //             'email' => $request->email,
+    //             'password' => Hash::make($request->password),
+    //             'status_aktif' => true,
+    //         ]);
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Registrasi berhasil. Akun Anda sudah aktif dan bisa digunakan.',
+    //             'data'    => $akun->load('orang')
+    //         ], 201);
+    //     } catch (Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Registrasi gagal: ' . $e->getMessage(),
+    //             'data'    => null
+    //         ], 500);
+    //     }
+    // }
+
     /**
-     * Mendaftarkan pelanggan baru, membuat data perorangan, akun, dan master tagihan.
+     * Mendaftarkan pelanggan baru atau mengaktifkan akun non-aplikasi yang sudah ada.
      */
     public function register(Request $request)
     {
-        // 1. Validasi input dari Flutter
+        $messages = [
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'nik.required' => 'NIK wajib diisi.',
+            'nik.size' => 'NIK harus terdiri dari 16 digit.',
+            'no_telepon.required' => 'Nomor telepon wajib diisi.',
+            'id_kelurahan.required' => 'Kelurahan wajib dipilih.',
+            'alamat.required' => 'Alamat wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email ini sudah digunakan oleh akun lain.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min' => 'Password minimal harus 6 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+        ];
+
+        // Validasi awal (tanpa unique NIK dan no_telepon)
         $validator = Validator::make($request->all(), [
-            'email'        => 'required|string|email|max:255|unique:akuns,email',
-            'password'     => ['required', 'confirmed', Password::min(8)],
-        ]);
+            'nama_lengkap' => 'required|string|max:255',
+            'nik' => 'required|string|size:16',
+            'no_telepon' => 'required|string|max:15',
+            'id_kelurahan' => 'required|exists:kelurahans,id_kelurahan',
+            'alamat' => 'required|string',
+            'email' => 'required|string|email|max:255|unique:akuns,email',
+            'password' => 'required|string|min:6|confirmed',
+        ], $messages);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data yang diberikan tidak valid.',
+                'message' => 'Validasi gagal.',
                 'data'    => ['errors' => $validator->errors()]
-            ], 422); // 422 Unprocessable Entity
+            ], 422);
         }
 
-        // 2. Gunakan DB Transaction untuk memastikan semua data konsisten
+        DB::beginTransaction();
         try {
-            $akun = Akun::create([
-                // id_perorangan dibiarkan null, akan diisi oleh admin
-                'id_perorangan' => null,
-                // id_role untuk pelanggan (asumsi ID = 2)
-                'id_role'       => 2,
-                'email'         => $request->email,
-                'password'      => Hash::make($request->password),
-                // Akun baru wajib tidak aktif sampai dikonfirmasi admin
-                'status_aktif'  => false,
-            ]);
-        } catch (\Exception $e) {
-            // Jika terjadi error, kembalikan respons gagal
+            // Cek apakah ada orang yang sudah terdaftar dengan NIK atau No. Telepon ini
+            $orang = Orang::where('nik', $request->nik)
+                ->orWhere('no_telepon', $request->no_telepon)
+                ->first();
+
+            if ($orang) {
+                // --- LOGIKA JIKA ORANG SUDAH ADA ---
+                $akun = $orang->akun;
+
+                // Jika akun tidak ada (kasus aneh), anggap sebagai error
+                if (!$akun) {
+                    throw new Exception("Data orang ditemukan tetapi akun terkait tidak ada.");
+                }
+
+                // Cek apakah emailnya masih dummy
+                if (str_ends_with($akun->email, '@nonaplikasi.com')) {
+                    // Update akun yang sudah ada dengan data baru
+                    $akun->update([
+                        'email' => $request->email,
+                        'password' => Hash::make($request->password),
+                    ]);
+                    $message = 'Akun Anda yang sudah ada berhasil diaktifkan untuk akses aplikasi.';
+                } else {
+                    // Akun sudah aktif dengan email asli, tolak pendaftaran
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'NIK atau Nomor Telepon sudah terdaftar dengan akun lain.',
+                        'data'    => null
+                    ], 409); // 409 Conflict
+                }
+            } else {
+                // --- LOGIKA JIKA ORANG BELUM ADA (PENDAFTARAN BARU) ---
+                $orangBaru = Orang::create([
+                    'nama_lengkap' => $request->nama_lengkap,
+                    'nik' => $request->nik,
+                    'no_telepon' => $request->no_telepon,
+                    'id_kelurahan' => $request->id_kelurahan,
+                    'alamat' => $request->alamat,
+                ]);
+
+                // Role 'pelanggan' diasumsikan memiliki id_role = 2
+                $akun = Akun::create([
+                    'id_role' => 2,
+                    'id_orang' => $orangBaru->id_orang,
+                    'email' => $request->email,
+                    'password' => Hash::make($request->password),
+                    'status_aktif' => true,
+                ]);
+                $message = 'Registrasi berhasil. Akun Anda sudah aktif dan bisa digunakan.';
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'data'    => $akun->load('orang')
+            ], 201);
+        } catch (Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Registrasi gagal, terjadi kesalahan pada server.',
+                'message' => 'Registrasi gagal: ' . $e->getMessage(),
                 'data'    => null
             ], 500);
         }
-
-        // 3. Kirim respons sukses
-        return response()->json([
-            'success' => true,
-            'message' => 'Registrasi berhasil. Akun Anda akan segera diaktifkan oleh Administrator.',
-            'data'    => [
-                'email' => $akun->email,
-                'role' => $akun->role,
-                'status_aktif' => $akun->status_aktif,
-            ]
-        ], 201); // 201 Created
     }
 
-    /**
-     * Melakukan login pengguna dan mengembalikan token otentikasi.
-     */
     public function login(Request $request)
     {
-        // 1. Validasi input
         $validator = Validator::make($request->all(), [
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data yang diberikan tidak valid.',
+                'message' => 'Validasi gagal.',
                 'data'    => ['errors' => $validator->errors()]
             ], 422);
         }
 
-        // 2. Coba autentikasi pengguna
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (!Auth::guard('web')->attempt($request->only('email', 'password'))) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email atau password salah.',
                 'data'    => null
-            ], 401); // 401 Unauthorized
+            ], 401);
         }
 
-        // 3. Dapatkan data akun yang berhasil login
         $akun = Akun::where('email', $request->email)->firstOrFail();
 
-        // Pengecekan tambahan (misalnya, akun aktif)
         if (!$akun->status_aktif) {
+            Auth::guard('web')->logout();
             return response()->json([
                 'success' => false,
-                'message' => 'Akun Anda belum aktif. Silakan hubungi Administrator.',
+                'message' => 'Akun Anda tidak aktif. Silakan hubungi administrator.',
                 'data'    => null
-            ], 403); // 403 Forbidden
+            ], 403);
         }
 
-        // 4. Buat token Sanctum
         $token = $akun->createToken('auth_token')->plainTextToken;
 
-        // 5. Kirim respons sukses beserta token dan data pengguna
         return response()->json([
             'success' => true,
             'message' => 'Login berhasil.',
             'data'    => [
                 'token' => $token,
-                'akuns'  => [
-                    'id_akun' => $akun->id_akun,
-                    'email'   => $akun->email,
-                    'role'    => $akun->role->nama_role, // Asumsi ada relasi 'role' di model Akun
-                ]
+                'token_type' => 'Bearer',
+                'akun' => $akun->load('orang', 'role')
             ]
         ], 200);
     }
 
-    /**
-     * Melakukan logout pengguna dengan menghapus token saat ini.
-     */
     public function logout(Request $request)
     {
-        $user = $request->user();
-
-        // Ambil token yang sedang digunakan untuk request ini
-        $token = $user->currentAccessToken();
-
-        // --- PERBAIKAN: Lakukan pengecekan untuk memastikan token valid ---
-        // Ini akan mencegah error jika token karena suatu alasan tidak ditemukan
-        if ($token instanceof PersonalAccessToken) {
-            $token->delete();
-        } else {
-            // Jika token tidak valid, kita bisa mencatatnya untuk debugging,
-            // tapi tetap lanjutkan proses logout agar klien bisa membersihkan sesinya.
-            Log::warning('Gagal menghapus token saat logout: Token tidak valid atau tidak ditemukan.', [
-                'user_id' => $user->id_akun
-            ]);
-        }
+        // [PERBAIKAN FINAL] Menghapus SEMUA token milik pengguna.
+        // Ini adalah cara yang paling andal dan aman untuk memastikan logout.
+        $request->user()->tokens()->delete();
 
         return response()->json([
             'success' => true,

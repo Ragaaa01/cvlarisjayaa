@@ -16,29 +16,30 @@ class TabungController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Tabung::with(['jenisTabung', 'statusTabung']);
+            $query = Tabung::with(['jenisTabung', 'statusTabung', 'kepemilikan']);
 
-            // Contoh filter berdasarkan status
+            // Filter berdasarkan status
             if ($request->has('id_status_tabung')) {
                 $query->where('id_status_tabung', $request->id_status_tabung);
             }
 
-            // Contoh pencarian berdasarkan kode
+            // Pencarian berdasarkan kode tabung
             if ($request->has('search')) {
                 $query->where('kode_tabung', 'like', '%' . $request->search . '%');
             }
 
-            $tabungs = $query->paginate(15);
+            $tabungs = $query->latest()->paginate(20);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Data tabung berhasil diambil.',
-                'data' => $tabungs
+                'data'    => $tabungs
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+                'message' => 'Gagal mengambil data: ' . $e->getMessage(),
+                'data'    => null
             ], 500);
         }
     }
@@ -48,17 +49,29 @@ class TabungController extends Controller
      */
     public function store(Request $request)
     {
+        $messages = [
+            'kode_tabung.required' => 'Kode tabung wajib diisi.',
+            'kode_tabung.unique'   => 'Kode tabung ini sudah terdaftar.',
+            'id_jenis_tabung.required' => 'Jenis tabung wajib dipilih.',
+            'id_jenis_tabung.exists'   => 'Jenis tabung yang dipilih tidak valid.',
+            'id_status_tabung.required' => 'Status tabung wajib dipilih.',
+            'id_status_tabung.exists'   => 'Status tabung yang dipilih tidak valid.',
+            'id_kepemilikan.required' => 'Status kepemilikan wajib dipilih.',
+            'id_kepemilikan.exists'   => 'Status kepemilikan yang dipilih tidak valid.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'kode_tabung' => 'required|string|max:255|unique:tabungs',
             'id_jenis_tabung' => 'required|exists:jenis_tabungs,id_jenis_tabung',
             'id_status_tabung' => 'required|exists:status_tabungs,id_status_tabung',
-        ]);
+            'id_kepemilikan' => 'required|exists:kepemilikans,id_kepemilikan',
+        ], $messages);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors' => $validator->errors()
+                'data'    => ['errors' => $validator->errors()]
             ], 422);
         }
 
@@ -67,12 +80,13 @@ class TabungController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Tabung berhasil ditambahkan.',
-                'data' => $tabung
+                'data'    => $tabung->load(['jenisTabung', 'statusTabung', 'kepemilikan'])
             ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menyimpan data: ' . $e->getMessage()
+                'message' => 'Gagal menyimpan data: ' . $e->getMessage(),
+                'data'    => null
             ], 500);
         }
     }
@@ -83,7 +97,7 @@ class TabungController extends Controller
     public function show($id)
     {
         try {
-            $tabung = Tabung::with(['jenisTabung', 'statusTabung'])->findOrFail($id);
+            $tabung = Tabung::with(['jenisTabung', 'statusTabung', 'kepemilikan'])->findOrFail($id);
             return response()->json([
                 'success' => true,
                 'message' => 'Detail tabung berhasil diambil.',
@@ -98,25 +112,25 @@ class TabungController extends Controller
     }
 
     /**
-     * BARU: Menampilkan satu tabung spesifik berdasarkan KODE TABUNG.
-     * Endpoint ini sangat cocok untuk fitur scan QR code.
+     * Menampilkan satu tabung spesifik berdasarkan KODE (untuk scan QR).
      */
     public function showByKode($kode_tabung)
     {
         try {
-            $tabung = Tabung::with(['jenisTabung', 'statusTabung'])
+            $tabung = Tabung::with(['jenisTabung', 'statusTabung', 'kepemilikan'])
                 ->where('kode_tabung', $kode_tabung)
                 ->firstOrFail();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Detail tabung berdasarkan kode berhasil diambil.',
-                'data' => $tabung
+                'message' => 'Detail tabung berhasil diambil.',
+                'data'    => $tabung
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tabung dengan kode tersebut tidak ditemukan.'
+                'message' => 'Tabung dengan kode tersebut tidak ditemukan.',
+                'data'    => null
             ], 404);
         }
     }
@@ -126,11 +140,22 @@ class TabungController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $messages = [
+            'kode_tabung.required' => 'Kode tabung wajib diisi.',
+            'kode_tabung.unique'   => 'Kode tabung ini sudah terdaftar.',
+            'id_jenis_tabung.required' => 'Jenis tabung wajib dipilih.',
+            'id_jenis_tabung.exists'   => 'Jenis tabung yang dipilih tidak valid.',
+            'id_status_tabung.required' => 'Status tabung wajib dipilih.',
+            'id_status_tabung.exists'   => 'Status tabung yang dipilih tidak valid.',
+            'id_kepemilikan.required' => 'Status kepemilikan wajib dipilih.',
+            'id_kepemilikan.exists'   => 'Status kepemilikan yang dipilih tidak valid.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'kode_tabung' => 'required|string|max:255|unique:tabungs,kode_tabung,' . $id . ',id_tabung',
             'id_jenis_tabung' => 'required|exists:jenis_tabungs,id_jenis_tabung',
             'id_status_tabung' => 'required|exists:status_tabungs,id_status_tabung',
-        ]);
+        ], $messages);
 
         if ($validator->fails()) {
             return response()->json([

@@ -13,8 +13,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('denda:cek-inaktivitas')->dailyAt('01:00');
+        // $schedule->command('denda:cek-inaktivitas')->dailyAt('01:00');
         $schedule->command('notifikasi:cek-inaktivitas')->dailyAt('08:00');
+        $schedule->command('notifikasi:kirim-tagihan')->dailyAt('09:00');
+        $schedule->command('transaksi:cek-hilang-otomatis')->dailyAt('02:00');
     }
 
     /**

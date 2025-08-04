@@ -22,11 +22,12 @@ class UserSeeder extends Seeder
             'nik' => '3200000000000000',
             'no_telepon' => '082119128578',
             'alamat' => 'Karangampel, Gang 2 Utara, Indramayu',
+            'id_kelurahan' => 152,
         ]);
 
         Akun::create([
             'id_orang' => $administrator->id_orang,
-            'id_role' => 1, // ID untuk 'administrator'
+            'id_role' => 1,
             'email' => 'administrator@larisjayagas.com',
             'password' => Hash::make('password123'),
             'status_aktif' => true,
@@ -38,22 +39,24 @@ class UserSeeder extends Seeder
             'nik' => '3200000000000002',
             'no_telepon' => '082119128512',
             'alamat' => 'Karangampel, Gang 2 Utara, Indramayu',
+            'id_kelurahan' => 152,
         ]);
 
         Akun::create([
             'id_orang' => $administrator->id_orang,
-            'id_role' => 3, // ID untuk 'administrator'
+            'id_role' => 3,
             'email' => 'karyawan@larisjayagas.com',
             'password' => Hash::make('password123'),
             'status_aktif' => true,
         ]);
 
-        // 2. Buat data Pelanggan "Ibu Siti"
+        // 2. Buat data Pelanggan ""
         $pelanggan = Orang::create([
-            'nama_lengkap' => 'Ani Nurjaya',
+            'nama_lengkap' => 'Aditya Sukma Pratama',
             'nik' => '3210000000000001',
             'no_telepon' => '081111111111',
             'alamat' => 'Jl. Mawar No. 1, Indramayu',
+            'id_kelurahan' => 97,
         ]);
 
         Akun::create([
