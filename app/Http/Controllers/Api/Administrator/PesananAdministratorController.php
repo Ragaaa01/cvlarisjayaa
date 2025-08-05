@@ -20,18 +20,17 @@ class PesananAdministratorController extends Controller
     {
         try {
             $query = Transaksi::where('status_valid', true)
-                ->whereHas('transaksiDetails', function ($q) {
-                    $q->whereIn('id_jenis_transaksi_detail', [1, 2]) // Peminjaman atau Isi Ulang
-                        ->whereNull('id_tabung'); // Yang belum ditetapkan tabungnya
+                // Kriteria utama: Cari transaksi yang memiliki detail...
+                ->whereHas('transaksiDetails.tabung', function ($q) {
+                    // ...di mana tabung yang terhubung memiliki id_status_tabung = 5 ('dipesan')
+                    $q->where('id_status_tabung', 5);
                 })
-                ->with(['orang.mitras']); // Muat data orang dan relasi mitranya
+                ->with(['orang']); // Muat data pelanggan untuk ditampilkan di daftar
 
+            // Logika pencarian
             if ($request->has('search')) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('id_transaksi', 'like', '%' . $request->search . '%')
-                        ->orWhereHas('orang', function ($subQ) use ($request) {
-                            $subQ->where('nama_lengkap', 'like', '%' . $request->search . '%');
-                        });
+                $query->whereHas('orang', function ($q) use ($request) {
+                    $q->where('nama_lengkap', 'like', '%' . $request->search . '%');
                 });
             }
 
@@ -47,6 +46,7 @@ class PesananAdministratorController extends Controller
         }
     }
 
+
     /**
      * [BARU] Menampilkan detail lengkap dari satu pesanan.
      */
@@ -56,7 +56,8 @@ class PesananAdministratorController extends Controller
             $transaksi = Transaksi::with([
                 'orang.mitras',
                 'transaksiDetails.jenisTransaksiDetail',
-                'transaksiDetails.tabung.jenisTabung' // Untuk melihat tabung yg sudah disiapkan
+                'transaksiDetails.tabung.jenisTabung',
+                'transaksiDetails.tabung.statusTabung'
             ])->findOrFail($id_transaksi);
 
             return response()->json([
@@ -69,63 +70,40 @@ class PesananAdministratorController extends Controller
         }
     }
 
+
     /**
-     * [DISEMPURNAKAN] Menetapkan tabung fisik ke item pesanan.
-     * Untuk peminjaman, fungsi ini akan menetapkan satu tabung ke tiga detail sekaligus.
+     * [DISEMPURNAKAN] Fungsi ini sekarang hanya mengonfirmasi penyiapan,
+     * tidak lagi menetapkan tabung.
      */
-    public function siapkanPesanan(Request $request, $id_transaksi)
+    public function konfirmasiPenyiapan(Request $request, $id_transaksi)
     {
-        $validator = Validator::make($request->all(), [
-            'items' => 'required|array|min:1',
-            'items.*.id_transaksi_detail' => 'required|exists:transaksi_details,id_transaksi_detail',
-            'items.*.kode_tabung' => 'required|exists:tabungs,kode_tabung',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Validasi gagal.', 'data' => ['errors' => $validator->errors()]], 422);
-        }
-
         DB::beginTransaction();
         try {
             $transaksi = Transaksi::findOrFail($id_transaksi);
 
-            foreach ($request->items as $item) {
-                $detail = TransaksiDetail::with('jenisTransaksiDetail')->find($item['id_transaksi_detail']);
-                $tabung = Tabung::where('kode_tabung', $item['kode_tabung'])->firstOrFail();
+            // Cari semua tabung yang 'dipesan' dalam transaksi ini
+            $tabungDipesan = Tabung::whereHas('transaksiDetails', function ($q) use ($id_transaksi) {
+                $q->where('id_transaksi', $id_transaksi);
+            })->where('id_status_tabung', 5)->get(); // 5 = 'dipesan'
 
-                if ($tabung->id_status_tabung != 1) { // 1 = 'tersedia'
-                    throw new Exception("Tabung {$item['kode_tabung']} tidak tersedia.");
-                }
+            if ($tabungDipesan->isEmpty()) {
+                throw new Exception("Tidak ada tabung berstatus 'dipesan' untuk transaksi ini.");
+            }
 
-                $jenisTransaksi = $detail->jenisTransaksiDetail->jenis_transaksi;
-
-                if ($jenisTransaksi === 'peminjaman') {
-                    // --- LOGIKA UTAMA: Tetapkan 1 tabung ke 3 detail ---
-                    $transaksi->transaksiDetails()
-                        ->whereIn('id_jenis_transaksi_detail', [1, 2, 3]) // Peminjaman, Isi Ulang, Deposit
-                        ->whereNull('id_tabung') // Cari yang masih kosong
-                        ->take(3) // Ambil 3 baris pertama yang cocok
-                        ->update(['id_tabung' => $tabung->id_tabung]);
-
-                    $tabung->update(['id_status_tabung' => 2]); // 2 = 'dipinjam'
-
-                } elseif ($jenisTransaksi === 'isi_ulang') {
-                    // --- LOGIKA UNTUK ISI ULANG MANDIRI ---
-                    $detail->update(['id_tabung' => $tabung->id_tabung]);
-                    // Status tabung tidak diubah karena ini hanya jasa
-                }
+            // Ubah status semua tabung tersebut menjadi 'dipinjam'
+            foreach ($tabungDipesan as $tabung) {
+                $tabung->update(['id_status_tabung' => 2]); // 2 = 'dipinjam'
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => "Semua tabung berhasil ditetapkan ke pesanan #{$id_transaksi}.",
-                'data'    => $transaksi->load('transaksiDetails.tabung')
+                'message' => "Pesanan #{$id_transaksi} berhasil dikonfirmasi dan siap dikirim.",
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Gagal menyiapkan pesanan: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal mengonfirmasi pesanan: ' . $e->getMessage()], 500);
         }
     }
 }

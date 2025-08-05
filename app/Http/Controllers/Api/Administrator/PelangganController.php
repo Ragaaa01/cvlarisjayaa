@@ -249,21 +249,20 @@ class PelangganController extends Controller
     public function getPelangganAktif(Request $request)
     {
         try {
-            // 1. Cari semua detail transaksi peminjaman yang belum memiliki record pengembalian.
-            $peminjamanAktifDetailIds = TransaksiDetail::whereHas('jenisTransaksiDetail', function ($q) {
-                $q->where('jenis_transaksi', 'peminjaman');
-            })
-                ->whereDoesntHave('pengembalian')
-                ->pluck('id_transaksi');
-
-            // 2. Dari transaksi tersebut, ambil semua id_orang yang unik.
-            $orangIds = Transaksi::whereIn('id_transaksi', $peminjamanAktifDetailIds)
-                ->distinct()
-                ->pluck('id_orang');
-
-            // 3. Ambil data akun dari id_orang tersebut.
             $query = Akun::with(['orang.kelurahan.kecamatan', 'orang.mitras'])
-                ->whereIn('id_orang', $orangIds);
+                ->whereHas('role', function ($q) {
+                    $q->where('nama_role', 'pelanggan');
+                })
+                // Kriteria Utama: Cari Akun yang memiliki...
+                ->whereHas('orang.transaksis.transaksiDetails', function ($q) {
+                    // ...detail transaksi yang memenuhi SEMUA kondisi berikut:
+                    $q->whereNotNull('id_tabung') // 1. Ada tabung yang ditetapkan
+                        ->whereDoesntHave('pengembalian') // 2. Belum dikembalikan
+                        ->whereHas('tabung', function ($subQ) {
+                            // 3. DAN tabung tersebut statusnya 'dipinjam' (ID 2)
+                            $subQ->where('id_status_tabung', 2);
+                        });
+                });
 
             // Logika pencarian
             if ($request->has('search')) {
@@ -275,7 +274,7 @@ class PelangganController extends Controller
                 });
             }
 
-            $pelanggan = $query->latest('created_at')->paginate(15);
+            $pelanggan = $query->latest('akuns.created_at')->paginate(15);
 
             return response()->json([
                 'success' => true,

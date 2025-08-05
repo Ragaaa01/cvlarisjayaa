@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\NotifikasiTemplate;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class NotifikasiTemplateSeeder extends Seeder
 {
@@ -13,6 +14,8 @@ class NotifikasiTemplateSeeder extends Seeder
      */
     public function run(): void
     {
+
+
         $templates = [
             [
                 'nama_template' => 'peringatan_denda_sewa',
@@ -31,6 +34,30 @@ class NotifikasiTemplateSeeder extends Seeder
                 'hari_set' => null,
                 'judul' => 'Akun Anda Telah Aktif!',
                 'isi' => 'Selamat datang, {nama_pelanggan}! Akun Anda telah diaktivasi oleh administrator dan siap digunakan.'
+            ],
+            [
+                'nama_template' => 'pengingat_h-3',
+                'hari_set' => null,
+                'judul' => 'Pengingat Pembayaran Tagihan',
+                'isi' => 'Yth. {nama_lengkap}, tagihan Anda sebesar {jumlah_tagihan} akan jatuh tempo dalam 3 hari. Mohon segera lakukan pembayaran untuk kenyamanan transaksi Anda selanjutnya. Terima kasih.',
+            ],
+            [
+                'nama_template' => 'pengingat_h-2',
+                'hari_set' => null,
+                'judul' => 'Pengingat Pembayaran Tagihan',
+                'isi' => 'Yth. {nama_lengkap}, tagihan Anda sebesar {jumlah_tagihan} akan jatuh tempo dalam 2 hari. Mohon segera lakukan pembayaran untuk kenyamanan transaksi Anda selanjutnya. Terima kasih.',
+            ],
+            [
+                'nama_template' => 'pengingat_h-1',
+                'hari_set' => null,
+                'judul' => 'Peringatan Terakhir Pembayaran',
+                'isi' => 'Yth. {nama_lengkap}, tagihan Anda sebesar {jumlah_tagihan} akan jatuh tempo BESOK. Segera lakukan pembayaran untuk menghindari denda keterlambatan. Terima kasih.',
+            ],
+            [
+                'nama_template' => 'pengingat_jatuh_tempo',
+                'hari_set' => null,
+                'judul' => 'Tagihan Anda Telah Jatuh Tempo',
+                'isi' => 'Yth. {nama_lengkap}, tagihan Anda sebesar {jumlah_tagihan} telah jatuh tempo hari ini. Mohon segera lakukan pembayaran untuk dapat melakukan transaksi kembali.',
             ],
         ];
 

@@ -17,5 +17,6 @@ class StatusTabungSeeder extends Seeder
         StatusTabung::firstOrCreate(['status_tabung' => 'dipinjam']);
         StatusTabung::firstOrCreate(['status_tabung' => 'rusak']);
         StatusTabung::firstOrCreate(['status_tabung' => 'hilang']);
+        StatusTabung::firstOrCreate(['status_tabung' => 'dipesan']);
     }
 }

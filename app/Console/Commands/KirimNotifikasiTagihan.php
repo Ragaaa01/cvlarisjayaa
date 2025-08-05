@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
 use Exception;
+use Kreait\Firebase\Messaging\AndroidConfig;
 
 class KirimNotifikasiTagihan extends Command
 {
@@ -23,7 +24,6 @@ class KirimNotifikasiTagihan extends Command
     {
         $this->info('Memulai proses pengiriman notifikasi tagihan...');
 
-        // 1. Ambil semua akun pelanggan yang aktif
         $akuns = Akun::where('status_aktif', true)
             ->whereHas('role', function ($q) {
                 $q->where('nama_role', 'pelanggan');
@@ -36,23 +36,21 @@ class KirimNotifikasiTagihan extends Command
                 $orang = $akun->orang;
                 if (!$orang) continue;
 
-                // 2. Hitung sisa tagihan untuk setiap pelanggan
                 $totalUtang = Transaksi::where('id_orang', $orang->id_orang)->where('status_valid', true)->sum('total_transaksi');
                 $totalBayar = Pembayaran::where('id_orang', $orang->id_orang)->sum('jumlah_pembayaran');
                 $sisaTagihan = $totalUtang - $totalBayar;
 
                 if ($sisaTagihan > 0) {
-                    // 3. Cari tanggal transaksi terakhir yang belum lunas sepenuhnya
-                    $transaksiTerakhir = Transaksi::where('id_orang', $orang->id_orang)
+                    // [PERBAIKAN UTAMA] Cari transaksi TERTUA yang valid, bukan yang terbaru.
+                    $transaksiPertama = Transaksi::where('id_orang', $orang->id_orang)
                         ->where('status_valid', true)
-                        ->latest('tanggal_transaksi')
+                        ->oldest('tanggal_transaksi') // <-- Menggunakan oldest()
                         ->first();
 
-                    if ($transaksiTerakhir) {
-                        $tanggalTransaksi = Carbon::parse($transaksiTerakhir->tanggal_transaksi);
+                    if ($transaksiPertama) {
+                        $tanggalTransaksi = Carbon::parse($transaksiPertama->tanggal_transaksi);
                         $hariBerlalu = $tanggalTransaksi->diffInDays(now());
 
-                        // 4. Tentukan template notifikasi berdasarkan hari
                         $template = null;
                         if ($hariBerlalu == 27) { // H-3
                             $template = NotifikasiTemplate::where('nama_template', 'pengingat_h-3')->first();
@@ -82,7 +80,12 @@ class KirimNotifikasiTagihan extends Command
      */
     protected function kirimNotifikasi(Akun $akun, NotifikasiTemplate $template, $sisaTagihan)
     {
-        // Cek apakah notifikasi dengan template yang sama sudah dikirim hari ini
+        // Pengecekan untuk memastikan relasi 'orang' tidak null
+        if (!$akun->orang) {
+            $this->warn("Akun #{$akun->id_akun} tidak memiliki data 'orang' yang terhubung. Dilewati.");
+            return;
+        }
+
         $sudahDikirim = Notifikasi::where('id_akun', $akun->id_akun)
             ->where('id_template', $template->id_notifikasi_template)
             ->whereDate('created_at', today())
@@ -100,24 +103,57 @@ class KirimNotifikasiTagihan extends Command
         }
 
         // Personalisasi pesan
-        $judul = str_replace('{nama}', $akun->orang->nama_lengkap, $template->judul);
-        $isi = str_replace('{jumlah_tagihan}', 'Rp ' . number_format($sisaTagihan, 0, ',', '.'), $template->isi);
+        $placeholders = ['{nama}', '{jumlah_tagihan}'];
+        $values = [
+            $akun->orang->nama_lengkap,
+            'Rp ' . number_format($sisaTagihan, 0, ',', '.')
+        ];
 
-        // Kirim notifikasi menggunakan Firebase
-        $messaging = app('firebase.messaging');
-        $notification = FirebaseNotification::create($judul, $isi);
-        $message = CloudMessage::new()->withNotification($notification);
+        $judul = str_replace($placeholders, $values, $template->judul);
+        $isi = str_replace($placeholders, $values, $template->isi);
 
-        $messaging->sendMulticast($message, $tokens);
-
-        // Catat di database
-        Notifikasi::create([
+        $notifikasiDB = Notifikasi::create([
             'id_akun' => $akun->id_akun,
             'id_template' => $template->id_notifikasi_template,
+            'judul' => $judul,
+            'isi' => $isi,
             'tanggal_terjadwal' => now(),
             'waktu_dikirim' => now(),
         ]);
 
-        $this->info("Notifikasi berhasil dikirim ke akun #{$akun->id_akun}.");
+        // [PERBAIKAN UTAMA] Membangun pesan menggunakan array sesuai permintaan Anda
+        $messagePayload = [
+            'notification' => [
+                'title' => $judul,
+                'body' => $isi,
+            ],
+            'data' => [
+                'judul' => $judul,
+                'isi' => $isi,
+                'screen' => 'notifikasi_detail',
+                'id_notifikasi' => (string)$notifikasiDB->id_notifikasi,
+            ],
+            'android' => [
+                'notification' => [
+                    'channel_id' => 'high_importance_channel',
+                ],
+                'priority' => 'high',
+            ],
+            'apns' => [
+                'payload' => [
+                    'aps' => [
+                        'sound' => 'default',
+                    ],
+                ],
+            ],
+        ];
+
+        $message = CloudMessage::fromArray($messagePayload);
+
+        $messaging = app('firebase.messaging');
+
+        $messaging->sendMulticast($message, $tokens);
+
+        $this->info("Notifikasi #{$notifikasiDB->id_notifikasi} berhasil dikirim ke akun #{$akun->id_akun}.");
     }
 }

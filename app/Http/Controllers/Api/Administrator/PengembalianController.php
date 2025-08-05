@@ -31,8 +31,18 @@ class PengembalianController extends Controller
                 ->whereHas('jenisTransaksiDetail', function ($q) {
                     $q->where('jenis_transaksi', 'peminjaman');
                 })
+                // [PERBAIKAN] Tambahkan kondisi untuk memfilter status tabung
+                ->whereHas('tabung', function ($q) {
+                    // Hanya sertakan transaksi jika tabungnya berstatus 'dipinjam' (ID 2)
+                    $q->where('id_status_tabung', 2);
+                })
                 ->whereDoesntHave('pengembalian') // Kunci: Hanya yang belum dikembalikan
-                ->with(['tabung.jenisTabung', 'transaksi.orang.mitras', 'tabung.statusTabung', 'jenisTransaksiDetail'])
+                ->with([
+                    'tabung.jenisTabung',
+                    'transaksi.orang.mitras',
+                    'tabung.statusTabung',
+                    'jenisTransaksiDetail'
+                ])
                 ->get();
 
             return response()->json([
@@ -92,6 +102,10 @@ class PengembalianController extends Controller
             'items_kembali' => 'required|array|min:1',
             'items_kembali.*.kode_tabung' => 'required|string|exists:tabungs,kode_tabung',
             'items_kembali.*.kondisi' => 'required|string|in:baik,rusak,hilang',
+            'items_kembali.*.denda_kondisi' => 'nullable|numeric|min:0|required_if:items_kembali.*.kondisi,rusak|required_if:items_kembali.*.kondisi,hilang',
+        ], [
+            // Tambahkan pesan custom agar lebih jelas
+            'items_kembali.*.denda_kondisi.required_if' => 'Nominal denda wajib diisi untuk kondisi rusak/hilang.'
         ]);
 
         if ($validator->fails()) {
@@ -166,7 +180,8 @@ class PengembalianController extends Controller
                 $dendaKondisi = 0;
                 $statusTabungBaruId = 1; // Default 'tersedia'
                 if ($kondisiAkhir === 'rusak' || $kondisiAkhir === 'hilang') {
-                    $dendaKondisi = $tabung->jenisTabung->nilai_deposit;
+                    // Ambil nominal denda dari input request, bukan dari nilai deposit tabung
+                    $dendaKondisi = $item['denda_kondisi'] ?? 0;
                     $statusTabungBaruId = ($kondisiAkhir === 'rusak') ? 3 : 4; // Asumsi 3=rusak, 4=hilang
                 }
 

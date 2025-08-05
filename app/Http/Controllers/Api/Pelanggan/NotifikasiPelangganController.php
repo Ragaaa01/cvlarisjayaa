@@ -30,6 +30,23 @@ class NotifikasiPelangganController extends Controller
     }
 
     /**
+     * [BARU] Mengambil detail satu notifikasi.
+     */
+    public function show(Request $request, $id_notifikasi)
+    {
+        try {
+            $akun = $request->user();
+            $notifikasi = Notifikasi::where('id_notifikasi', $id_notifikasi)
+                ->where('id_akun', $akun->id_akun)
+                ->firstOrFail();
+
+            return response()->json(['success' => true, 'message' => 'Detail notifikasi berhasil diambil.', 'data' => $notifikasi], 200);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal mengambil detail notifikasi.'], 404);
+        }
+    }
+
+    /**
      * Menandai satu notifikasi sebagai sudah dibaca.
      */
     public function tandaiDibaca(Request $request, $id_notifikasi)
