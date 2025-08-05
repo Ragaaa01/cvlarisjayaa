@@ -24,6 +24,6 @@ class Role
             return $next($request);
         }
 
-        return redirect()->route('login')->with('error', 'Akses ditolak. Anda tidak memiliki izin untuk mengakses halaman ini.');
+        return redirect()->route('dashboard')->with('error', 'Akses ditolak. Anda tidak memiliki izin untuk mengakses halaman ini.');
     }
 }

@@ -10,10 +10,8 @@
     <link href="{{ asset('/assets/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,300,400,600,700,800,900" rel="stylesheet">
     <link href="{{ asset('/assets/css/sb-admin-2.min.css') }}" rel="stylesheet">
-    <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <!-- SweetAlert2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="{{ asset('/assets/vendor/datatables/dataTables.bootstrap4.min.css') }}" rel="stylesheet">
     @yield('styles')
 </head>
 <body id="page-top">
@@ -31,18 +29,6 @@
                         <i class="fa fa-bars"></i>
                     </button>
 
-                    <!-- Search Bar -->
-                    <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 mw-100 navbar-search">
-                        <div class="input-group">
-                            <input type="text" class="form-control bg-light border-0 small" placeholder="Cari...">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="button">
-                                    <i class="fas fa-search fa-sm"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
                         <li class="nav-item dropdown no-arrow">
@@ -51,9 +37,17 @@
                                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{ Auth::user()->name_ ?? 'Admin' }}</span>
                                 <img class="img-profile rounded-circle" src="{{ asset('/assets/img/undraw_profile.svg') }}">
                             </a>
-
                             <!-- User Dropdown -->
-                            
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="{{ route('logout') }}"
+                                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Logout
+                                </a>
+                                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                            </div>
                         </li>
                     </ul>
                 </nav>
@@ -68,7 +62,7 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>© {{ date('Y') }} Perusahaan Anda</span>
+                        <span>© {{ date('Y') }} CV Laris Jaya Gas</span>
                     </div>
                 </div>
             </footer>
@@ -83,10 +77,18 @@
     <script src="{{ asset('/assets/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('/assets/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
     <script src="{{ asset('/assets/js/sb-admin-2.min.js') }}"></script>
-    <!-- Select2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <!-- SweetAlert2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="{{ asset('/assets/vendor/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('/assets/vendor/datatables/dataTables.bootstrap4.min.js') }}"></script>
+
+    <!-- AJAX CSRF Setup -->
+    <script>
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+    </script>
 
     @stack('scripts')
 </body>

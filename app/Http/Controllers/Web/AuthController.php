@@ -11,14 +11,14 @@ use Exception;
 
 class AuthController extends Controller
 {
-    public function __construct()
+   public function __construct()
     {
         // Terapkan middleware 'guest' untuk showLoginForm agar hanya bisa diakses oleh pengguna yang belum login
         $this->middleware('guest:web')->only('showLoginForm');
         // Terapkan middleware 'auth' untuk melindungi metode lain kecuali login dan showLoginForm
         $this->middleware('auth:web')->except(['showLoginForm', 'login']);
-        // Terapkan middleware 'check.role' untuk memverifikasi role, kecuali login dan logout
-        $this->middleware('check.role')->except(['showLoginForm', 'login', 'logout']);
+        // Terapkan middleware 'role' untuk memverifikasi role, kecuali login dan logout
+        $this->middleware('role:administrator,karyawan')->except(['showLoginForm', 'login', 'logout']);
     }
 
     public function showLoginForm()
