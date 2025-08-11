@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('id_orang');
             $table->string('nama_lengkap');
             $table->string('nik')->unique()->nullable();
-            $table->string('no_telepon')->unique();
+            $table->string('no_telepon')->unique()->nullable();
 
             // Foreign key ke tabel kelurahans (bisa null jika alamat belum lengkap)
             $table->foreignId('id_kelurahan')->nullable()->constrained('kelurahans', 'id_kelurahan');

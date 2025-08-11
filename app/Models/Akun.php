@@ -35,9 +35,12 @@ class Akun extends Authenticatable
     protected $fillable = [
         'id_role',
         'id_orang',
+        'google_id',
+        'avatar',
         'email',
         'password',
         'status_aktif',
+
     ];
     /**
      * Tambahkan atribut virtual 'is_profile_complete' ke JSON response.

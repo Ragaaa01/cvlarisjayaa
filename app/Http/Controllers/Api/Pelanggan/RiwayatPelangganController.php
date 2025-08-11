@@ -15,14 +15,42 @@ class RiwayatPelangganController extends Controller
     /**
      * Mengambil riwayat peminjaman (aktif & selesai).
      */
+    // public function peminjaman(Request $request)
+    // {
+    //     try {
+    //         $orang = $request->user()->orang;
+    //         $riwayat = TransaksiDetail::where('id_jenis_transaksi_detail', 1)
+    //             ->whereHas('transaksi', function ($q) use ($orang) {
+    //                 $q->where('id_orang', $orang->id_orang)
+    //                     ->where('status_valid', true);
+    //             })
+    //             ->whereHas('tabung')
+    //             ->with(['transaksi', 'tabung.jenisTabung', 'pengembalian'])
+    //             ->latest('id_transaksi_detail')
+    //             ->paginate(15);
+
+    //         return response()->json(['success' => true, 'data' => $riwayat]);
+    //     } catch (Exception $e) {
+    //         return response()->json(['success' => false, 'message' => 'Gagal mengambil riwayat peminjaman.'], 500);
+    //     }
+    // }
+
+    /**
+     * Mengambil riwayat peminjaman.
+     */
     public function peminjaman(Request $request)
     {
         try {
             $orang = $request->user()->orang;
-            $riwayat = TransaksiDetail::whereHas('transaksi', fn($q) => $q->where('id_orang', $orang->id_orang))
-                ->where('id_jenis_transaksi_detail', 1) // Hanya peminjaman
-                ->with(['transaksi', 'tabung.jenisTabung', 'pengembalian'])
-                ->latest()
+            $riwayat = TransaksiDetail::where('id_jenis_transaksi_detail', 1) // Hanya peminjaman
+                ->whereHas('transaksi', function ($q) use ($orang) {
+                    $q->where('id_orang', $orang->id_orang)
+                        ->where('status_valid', true); // Tetap ambil transaksi yang sudah valid
+                })
+                ->whereHas('tabung')
+                // [PERBAIKAN] Pastikan relasi statusTabung dari tabung ikut dimuat
+                ->with(['transaksi', 'tabung.jenisTabung', 'tabung.statusTabung'])
+                ->latest('id_transaksi_detail')
                 ->paginate(15);
 
             return response()->json(['success' => true, 'data' => $riwayat]);
@@ -31,6 +59,7 @@ class RiwayatPelangganController extends Controller
         }
     }
 
+
     /**
      * Mengambil riwayat isi ulang.
      */
@@ -38,10 +67,14 @@ class RiwayatPelangganController extends Controller
     {
         try {
             $orang = $request->user()->orang;
-            $riwayat = TransaksiDetail::whereHas('transaksi', fn($q) => $q->where('id_orang', $orang->id_orang))
-                ->where('id_jenis_transaksi_detail', 2) // Hanya isi ulang
+
+            $riwayat = TransaksiDetail::where('id_jenis_transaksi_detail', 2)
+                ->whereHas('transaksi', function ($q) use ($orang) {
+                    $q->where('id_orang', $orang->id_orang)
+                        ->where('status_valid', true);
+                })
                 ->with(['transaksi', 'tabung.jenisTabung'])
-                ->latest()
+                ->latest('id_transaksi_detail')
                 ->paginate(15);
 
             return response()->json(['success' => true, 'data' => $riwayat]);
@@ -80,15 +113,14 @@ class RiwayatPelangganController extends Controller
                     'success' => false,
                     'message' => 'Profil pelanggan tidak lengkap. Silakan perbarui profil Anda.',
                     'data'    => null
-                ], 404); // 404 Not Found adalah status yang tepat untuk ini.
+                ], 404);
             }
 
             $peminjaman = Tabung::with('jenisTabung')
                 ->whereHas('transaksiDetails', function ($query) use ($orang) {
-                    // Cari detail transaksi yang...
-                    // 1. Belum memiliki data pengembalian
+
                     $query->whereDoesntHave('pengembalian')
-                        // 2. Dan transaksi induknya milik pelanggan yang sedang login & sudah valid
+
                         ->whereHas('transaksi', function ($subQuery) use ($orang) {
                             $subQuery->where('id_orang', $orang->id_orang)
                                 ->where('status_valid', true);

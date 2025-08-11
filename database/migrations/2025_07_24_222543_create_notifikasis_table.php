@@ -19,6 +19,9 @@ return new class extends Migration
 
             // Foreign key ke tabel notifikasi_templates
             $table->foreignId('id_template')->constrained('notifikasi_templates', 'id_notifikasi_template');
+            $table->string('judul')->after('id_template')->nullable();
+            // Tambahkan kolom 'isi' setelah 'judul'
+            $table->text('isi')->after('judul')->nullable();
 
             $table->timestamp('tanggal_terjadwal');
             $table->boolean('status_baca')->default(false);

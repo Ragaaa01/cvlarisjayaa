@@ -106,4 +106,31 @@ class PesananAdministratorController extends Controller
             return response()->json(['success' => false, 'message' => 'Gagal mengonfirmasi pesanan: ' . $e->getMessage()], 500);
         }
     }
+
+    /**
+     * [BARU] Menghitung dan mengembalikan jumlah pesanan yang menunggu penyiapan.
+     */
+    public function getJumlahMenunggu(Request $request)
+    {
+        try {
+            // [PERBAIKAN] Logika diubah total.
+            // Kita sekarang menghitung jumlah tabung yang statusnya 'dipesan'.
+            // PENTING: Pastikan id_status_tabung untuk 'dipesan' adalah 5.
+            // Sesuaikan angka 5 jika ID-nya berbeda di database Anda.
+            $jumlah = Tabung::where('id_status_tabung', 5)->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Jumlah pesanan berhasil diambil.',
+                'data'    => [
+                    'jumlah' => $jumlah
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil jumlah pesanan: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
