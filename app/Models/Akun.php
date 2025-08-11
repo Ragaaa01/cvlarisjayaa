@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -34,10 +35,28 @@ class Akun extends Authenticatable
     protected $fillable = [
         'id_role',
         'id_orang',
+        'google_id',
+        'avatar',
         'email',
         'password',
         'status_aktif',
+
     ];
+    /**
+     * Tambahkan atribut virtual 'is_profile_complete' ke JSON response.
+     */
+    protected $appends = ['is_profile_complete'];
+
+    /**
+     * Accessor untuk menghitung apakah profil sudah lengkap.
+     * Profil dianggap lengkap jika NIK BUKAN lagi nilai placeholder.
+     */
+    protected function isProfileComplete(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->orang->nik !== '0000000000000000',
+        );
+    }
 
     /**
      * Atribut yang harus disembunyikan saat serialisasi.

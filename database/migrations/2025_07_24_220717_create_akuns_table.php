@@ -19,7 +19,8 @@ return new class extends Migration
 
             // Foreign key ke tabel orangs
             $table->foreignId('id_orang')->constrained('orangs', 'id_orang');
-
+            $table->string('google_id')->nullable();
+            $table->string('avatar')->nullable();
             $table->string('email')->unique()->nullable();
             $table->string('password')->nullable();
             $table->boolean('status_aktif')->default(true);

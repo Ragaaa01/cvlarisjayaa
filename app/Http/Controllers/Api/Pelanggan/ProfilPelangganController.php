@@ -101,4 +101,32 @@ class ProfilPelangganController extends Controller
             return response()->json(['success' => false, 'message' => 'Gagal mengubah password.'], 500);
         }
     }
+
+    public function lengkapiProfil(Request $request)
+    {
+        $akun = $request->user();
+        $orang = $akun->orang;
+
+        // Validasi untuk data diri yang lengkap
+        $validator = Validator::make($request->all(), [
+            'nama_lengkap' => 'required|string|max:255',
+            'nik' => 'required|string|size:16|unique:orangs,nik,' . $orang->id_orang . ',id_orang',
+            'no_telepon' => 'required|string|max:15|unique:orangs,no_telepon,' . $orang->id_orang . ',id_orang',
+            'id_kelurahan' => 'required|exists:kelurahans,id_kelurahan',
+            'alamat' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validasi gagal.', 'data' => ['errors' => $validator->errors()]], 422);
+        }
+
+        try {
+            // Update data Orang yang sebelumnya hanya placeholder
+            $orang->update($request->all());
+
+            return response()->json(['success' => true, 'message' => 'Profil berhasil diperbarui.', 'data' => $akun->load('orang')]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui profil: ' . $e->getMessage()], 500);
+        }
+    }
 }

@@ -31,6 +31,8 @@ class Notifikasi extends Model
     protected $fillable = [
         'id_akun',
         'id_template',
+        'judul',
+        'isi',
         'tanggal_terjadwal',
         'status_baca',
         'waktu_dikirim',
@@ -42,10 +44,13 @@ class Notifikasi extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'tanggal_terjadwal' => 'datetime',
-        'waktu_dikirim' => 'datetime',
+        'tanggal_terjadwal' => 'datetime:Y-m-d H:i:s',
+        'waktu_dikirim' => 'datetime:Y-m-d H:i:s',
         'status_baca' => 'boolean',
+        'created_at' => 'datetime:Y-m-d H:i:s',
+        'updated_at' => 'datetime:Y-m-d H:i:s',
     ];
+
 
     /**
      * Mendefinisikan relasi belongs-to ke model Akun.

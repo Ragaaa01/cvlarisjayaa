@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\Administrator\DashboardController;
 use App\Http\Controllers\Api\Administrator\JenisTabungController;
 use App\Http\Controllers\Api\Administrator\KepemilikanController;
+use App\Http\Controllers\Api\Administrator\LaporanAdministratorController;
+use App\Http\Controllers\Api\Administrator\LaporanStokController;
 use App\Http\Controllers\Api\Administrator\MitraController;
 use App\Http\Controllers\Api\Administrator\OrangMitraController;
 use App\Http\Controllers\Api\Administrator\PelangganController;
@@ -19,23 +21,22 @@ use App\Http\Controllers\Api\Administrator\TagihanController;
 use App\Http\Controllers\Api\Administrator\TransaksiLangsungController;
 use App\Http\Controllers\Api\AlamatController;
 use App\Http\Controllers\Api\Auth\AuthController;
+use App\Http\Controllers\Api\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\FcmTokenController;
 use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\MidtransWebhookController;
 use App\Http\Controllers\Api\Pelanggan\DashboardPelangganController;
 use App\Http\Controllers\Api\Pelanggan\DepositController;
+use App\Http\Controllers\Api\Pelanggan\MitraPelangganController;
 use App\Http\Controllers\Api\Pelanggan\NotifikasiPelangganController;
 use App\Http\Controllers\Api\Pelanggan\PesananController;
 use App\Http\Controllers\Api\Pelanggan\ProdukController;
 use App\Http\Controllers\Api\Pelanggan\ProfilPelangganController;
 use App\Http\Controllers\Api\Pelanggan\RiwayatController;
+use App\Http\Controllers\Api\Pelanggan\RiwayatPelangganController;
 use App\Http\Controllers\Api\Pelanggan\TagihanPelangganController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-
-
-
 
 
 
@@ -58,6 +59,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle']);
+Route::post('/auth/google/callback', [GoogleAuthController::class, 'handleCallback']);
 
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail']);
 Route::post('/reset-password', [ForgotPasswordController::class, 'reset']);
@@ -137,9 +139,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/pengembalian/struk-pdf', [PengembalianStrukController::class, 'downloadStrukPdf']);
 
         // Route untuk proses pesanan 
+        Route::get('/pesanan/jumlah-menunggu', [PesananAdministratorController::class, 'getJumlahMenunggu']);
         Route::get('/pesanan/menunggu-penyiapan', [PesananAdministratorController::class, 'getMenungguPenyiapan']);
-        Route::get('/pesanan/{id_transaksi}', [PesananAdministratorController::class, 'show']); // Rute Detail
-        Route::post('/pesanan/{id_transaksi}/siapkan', [PesananAdministratorController::class, 'siapkanPesanan']);
+        Route::get('/pesanan/{id_transaksi}', [PesananAdministratorController::class, 'show']);
+        Route::post('/pesanan/{id_transaksi}/konfirmasi', [PesananAdministratorController::class, 'konfirmasiPenyiapan']);
+
+        Route::get('/laporan/rekapitulasi-stok', [LaporanStokController::class, 'rekapitulasiBulanan']);
+
+        Route::get('/laporan/bulanan', [LaporanAdministratorController::class, 'getLaporanBulanan']);
+        Route::get('/laporan/bulanan/download', [LaporanAdministratorController::class, 'downloadLaporanBulanan']);
     });
 
     // Route Management Pelanggan
@@ -148,24 +156,28 @@ Route::middleware('auth:sanctum')->group(function () {
         // Route untuk dashboard pelanggan
         Route::get('/dashboard', [DashboardPelangganController::class, 'index']);
         Route::get('/profil', [ProfilPelangganController::class, 'show']);
+        Route::put('/profil/lengkapi', [ProfilPelangganController::class, 'lengkapiProfil']);
 
         Route::get('/produk', [ProdukController::class, 'index']);
         Route::post('/pesanan', [PesananController::class, 'store']);
 
-        Route::get('/riwayat/peminjaman', [RiwayatController::class, 'peminjaman']);
+        // Grup untuk semua rute riwayat
+        Route::get('/riwayat/peminjaman', [RiwayatPelangganController::class, 'peminjaman']);
+        Route::get('/riwayat/isi-ulang', [RiwayatPelangganController::class, 'isiUlang']);
+        Route::get('/riwayat/pembayaran', [RiwayatPelangganController::class, 'pembayaran']);
 
         Route::get('/tagihan/rekapitulasi', [TagihanPelangganController::class, 'getRekapitulasi']);
         Route::post('/tagihan/bayar', [TagihanPelangganController::class, 'bayar']);
 
         Route::get('/notifikasi', [NotifikasiPelangganController::class, 'index']);
         Route::post('/notifikasi/{id_notifikasi}/baca', [NotifikasiPelangganController::class, 'tandaiDibaca']);
+        Route::get('/notifikasi/{id_notifikasi}', [NotifikasiPelangganController::class, 'show']);
 
-        // Grup untuk semua rute riwayat
-        Route::prefix('riwayat')->group(function () {
-            Route::get('/isi-ulang', [RiwayatController::class, 'isiUlang']);
-            Route::get('/tagihan', [RiwayatController::class, 'tagihan']);
-            Route::get('/deposit', [RiwayatController::class, 'deposit']);
-        });
+        Route::get('/mitra/search', [MitraPelangganController::class, 'search']);
+        Route::post('/mitra/daftar', [MitraPelangganController::class, 'daftar']);
+
+        Route::get('/peminjaman-aktif', [RiwayatPelangganController::class, 'peminjamanAktif']);
+
 
         Route::prefix('profil')->group(function () {
             // Route::get('/', [ProfilController::class, 'show']);

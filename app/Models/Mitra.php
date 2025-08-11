@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\OrangMitra;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -63,6 +64,8 @@ class Mitra extends Model
             ->withTimestamps();
     }
 
-
-
+    public function orangMitras()
+    {
+        return $this->hasMany(OrangMitra::class, 'id_mitra');
+    }
 }
