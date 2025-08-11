@@ -14,8 +14,7 @@ class JenisTransaksiDetailSeeder extends Seeder
     public function run(): void
     {
         JenisTransaksiDetail::firstOrCreate(['jenis_transaksi' => 'peminjaman']);
-        JenisTransaksiDetail::firstOrCreate(['jenis_transaksi' => 'isi_ulang']);
+        JenisTransaksiDetail::firstOrCreate(['jenis_transaksi' => 'isi ulang']);
         JenisTransaksiDetail::firstOrCreate(['jenis_transaksi' => 'deposit']);
-        JenisTransaksiDetail::firstOrCreate(['jenis_transaksi' => 'denda']);
     }
 }

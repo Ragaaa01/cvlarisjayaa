@@ -7,7 +7,7 @@
         .table th, .table td {
             vertical-align: middle;
             font-size: 0.9rem;
-            text-align: center; /* Rata tengah untuk semua isi kolom */
+            text-align: center;
         }
         .table th {
             text-align: center;
@@ -49,7 +49,7 @@
             -webkit-overflow-scrolling: touch;
         }
         .table {
-            min-width: 900px; /* Dikurangi dari 1000px karena kolom lebih sedikit */
+            min-width: 900px;
         }
         .action-icon {
             font-size: 0.85rem;
@@ -62,7 +62,7 @@
             z-index: 1;
             box-shadow: -2px 0 2px rgba(0,0,0,0.1);
             min-width: 100px;
-            text-align: center; /* Pastikan kolom Aksi tetap rata tengah */
+            text-align: center;
         }
         .action-header {
             position: sticky;
@@ -181,7 +181,7 @@
             color: #28a745;
         }
         .radio-group input[type="radio"]:checked + span::before {
-            content: '\f058'; /* Font Awesome check-circle */
+            content: '\f058';
             font-family: 'Font Awesome 5 Free';
             font-weight: 900;
             margin-right: 8px;
@@ -189,19 +189,6 @@
         }
         #denda_kondisi_tabung_group {
             display: none;
-        }
-        .nav-tabs .nav-link {
-            color: #014A7F;
-            font-weight: bold;
-        }
-        .nav-tabs .nav-link.active {
-            background-color: #014A7F;
-            color: white;
-            border-color: #014A7F;
-        }
-        .nav-tabs .nav-link:hover {
-            background-color: #f8f9fa;
-            border-color: #dee2e6 #dee2e6 #fff;
         }
         .error-container {
             display: none;
@@ -304,56 +291,23 @@
                     </button>
                 </div>
             @endif
-            <ul class="nav nav-tabs" id="pengembalianTabs" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" id="berlangsung-tab" data-toggle="tab" href="#berlangsung" role="tab" aria-controls="berlangsung" aria-selected="true">Berlangsung</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="selesai-tab" data-toggle="tab" href="#selesai" role="tab" aria-controls="selesai" aria-selected="false">Selesai</a>
-                </li>
-            </ul>
-            <div class="tab-content" id="pengembalianTabContent">
-                <div class="tab-pane fade show active" id="berlangsung" role="tabpanel" aria-labelledby="berlangsung-tab">
-                    <div class="table-responsive mt-3">
-                        <table class="table table-bordered table-hover" id="dataTableBerlangsung" width="100%" cellspacing="0">
-                            <thead class="background">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Pelanggan</th>
-                                    <th>Kode Tabung</th>
-                                    <th>Jenis Tabung</th>
-                                    <th>Tanggal Pinjam / Aktivitas Terakhir</th>
-                                    <th>Sisa Deposit</th>
-                                    <th>Total Denda</th>
-                                    <th class="action-header">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="selesai" role="tabpanel" aria-labelledby="selesai-tab">
-                    <div class="table-responsive mt-3">
-                        <table class="table table-bordered table-hover" id="dataTableSelesai" width="100%" cellspacing="0">
-                            <thead class="background">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Pelanggan</th>
-                                    <th>Kode Tabung</th>
-                                    <th>Jenis Tabung</th>
-                                    <th>Tanggal Pinjam</th>
-                                    <th>Tanggal Pengembalian</th>
-                                    <th>Sisa Deposit</th>
-                                    <th>Total Denda</th>
-                                    <th class="action-header">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="table-responsive mt-3">
+                <table class="table table-bordered table-hover" id="dataTableBerlangsung" width="100%" cellspacing="0">
+                    <thead class="background">
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Pelanggan</th>
+                            <th>Kode Tabung</th>
+                            <th>Jenis Tabung</th>
+                            <th>Tanggal Pinjam / Aktivitas Terakhir</th>
+                            <th>Sisa Deposit</th>
+                            <th>Total Denda</th>
+                            <th class="action-header">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -456,113 +410,17 @@
                 return parseFloat(clean || 0).toFixed(2);
             }
 
-            // Inisialisasi DataTable untuk tab Berlangsung
+            // Inisialisasi DataTable untuk pengembalian berlangsung
             var tableBerlangsung = $('#dataTableBerlangsung').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route("pengembalian.index") }}?status=berlangsung',
+                ajax: '{{ route("pengembalian.index") }}',
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'nama_pelanggan', name: 'transaksiDetail.transaksi.orang.nama_lengkap' },
                     { data: 'kode_tabung', name: 'tabung.kode_tabung' },
                     { data: 'nama_jenis_tabung', name: 'tabung.jenisTabung.nama_jenis' },
-                    { data: 'tanggal_pinjam', name: 'tanggal_pinjam' }, // Hapus className: 'tanggal-column'
-                    { data: 'sisa_deposit', name: 'sisa_deposit' },
-                    { data: 'total_denda', name: 'total_denda' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false, className: 'action-column' }
-                ],
-                responsive: true,
-                scrollX: true,
-                pageLength: 10,
-                ordering: false,
-                lengthChange: false,
-                language: {
-                    url: '{{ asset("assets/datatables/id.json") }}'
-                },
-                pagingType: 'simple_numbers',
-                drawCallback: function(settings) {
-                    var api = this.api();
-                    var pageInfo = api.page.info();
-                    var currentPage = pageInfo.page + 1;
-                    var totalPages = pageInfo.pages;
-                    var maxPagesToShow = 3;
-
-                    var $pagination = $('.dataTables_paginate', this.dom).find('.pagination');
-                    $pagination.find('.paginate_button').not('.previous, .next').remove();
-
-                    if (currentPage > 1) {
-                        var $firstButton = $('<a>', {
-                            class: 'paginate_button',
-                            href: '#',
-                            text: '« First'
-                        }).on('click', function(e) {
-                            e.preventDefault();
-                            api.page('first').draw('page');
-                        });
-                        $pagination.find('.paginate_button.previous').after($firstButton);
-                    }
-
-                    var startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-                    var endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
-                    if (endPage - startPage < maxPagesToShow - 1) {
-                        startPage = Math.max(1, endPage - maxPagesToShow + 1);
-                    }
-
-                    if (startPage > 2) {
-                        var $ellipsisStart = $('<span>', {
-                            class: 'ellipsis',
-                            text: '...'
-                        });
-                        $pagination.find('.paginate_button.previous').after($ellipsisStart);
-                    }
-
-                    for (var i = startPage; i <= endPage; i++) {
-                        var $pageButton = $('<a>', {
-                            class: 'paginate_button ' + (i === currentPage ? 'current' : ''),
-                            href: '#',
-                            text: i
-                        }).on('click', function(e) {
-                            e.preventDefault();
-                            api.page(parseInt($(this).text()) - 1).draw('page');
-                        });
-                        $pagination.find('.paginate_button.next').before($pageButton);
-                    }
-
-                    if (endPage < totalPages - 1) {
-                        var $ellipsisEnd = $('<span>', {
-                            class: 'ellipsis',
-                            text: '...'
-                        });
-                        $pagination.find('.paginate_button.next').before($ellipsisEnd);
-                    }
-
-                    if (currentPage < totalPages) {
-                        var $lastButton = $('<a>', {
-                            class: 'paginate_button',
-                            href: '#',
-                            text: 'Last »'
-                        }).on('click', function(e) {
-                            e.preventDefault();
-                            api.page('last').draw('page');
-                        });
-                        $pagination.find('.paginate_button.next').before($lastButton);
-                    }
-                }
-            });
-
-            // Inisialisasi DataTable untuk tab Selesai
-            var tableSelesai = $('#dataTableSelesai').DataTable({
-                processing: true,
-                serverSide: true,
-                ajax: '{{ route("pengembalian.index") }}?status=selesai',
-                columns: [
-                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'nama_pelanggan', name: 'transaksiDetail.transaksi.orang.nama_lengkap' },
-                    { data: 'kode_tabung', name: 'tabung.kode_tabung' },
-                    { data: 'nama_jenis_tabung', name: 'tabung.jenisTabung.nama_jenis' },
-                    { data: 'tanggal_pinjam', name: 'tanggal_pinjam' }, // Hapus className: 'tanggal-column'
-                    { data: 'tanggal_pengembalian', name: 'tanggal_pengembalian' }, // Hapus className: 'tanggal-column'
+                    { data: 'tanggal_pinjam', name: 'tanggal_pinjam' },
                     { data: 'sisa_deposit', name: 'sisa_deposit' },
                     { data: 'total_denda', name: 'total_denda' },
                     { data: 'action', name: 'action', orderable: false, searchable: false, className: 'action-column' }
@@ -655,7 +513,7 @@
                 var deposit = button.data('deposit');
 
                 var modal = $(this);
-                modal.find('#pengembalianForm').attr('action', '{{ url("pengembalian") }}/' + id);
+                modal.find('#pengembalianForm').attr('action', '{{ route("pengembalian.update", ":id") }}'.replace(':id', id));
                 modal.find('#modal_kode_tabung').val(kodeTabung);
                 modal.find('#modal_deposit').val(formatRupiah(deposit));
                 modal.find('#modal_deposit_hidden').val(parseFloat(deposit).toFixed(2));
@@ -698,8 +556,8 @@
 
             // Event untuk menangani input denda kondisi tabung
             $('#modal_denda_kondisi_tabung').on('input', function() {
-                let value = $(this).val().replace(/[^0-9]/g, ''); // Hanya izinkan angka
-                $(this).val(value); // Tampilkan angka mentah saat mengetik
+                let value = $(this).val().replace(/[^0-9]/g, '');
+                $(this).val(value);
             }).on('blur', function() {
                 let value = $(this).val();
                 if (value === '') {
@@ -721,11 +579,13 @@
                     url: form.attr('action'),
                     type: 'POST',
                     data: form.serialize() + '&_method=PUT',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
                     success: function(response) {
                         $('#pengembalianModal').modal('hide');
                         // Refresh tabel tanpa reload halaman
                         tableBerlangsung.ajax.reload(null, false);
-                        tableSelesai.ajax.reload(null, false);
                         // Tampilkan pesan sukses
                         var successHtml = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
                             '<i class="fas fa-check-circle alert-icon"></i>' +
@@ -738,8 +598,8 @@
                             $('.success-container').addClass('fade-out');
                             setTimeout(function() {
                                 $('.success-container').empty().hide().removeClass('fade-out');
-                            }, 500); // Durasi animasi fade-out
-                        }, 10000); // Tampilkan selama 10 detik
+                            }, 500);
+                        }, 10000);
                     },
                     error: function(xhr) {
                         var errorHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +

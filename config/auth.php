@@ -3,7 +3,6 @@
 return [
     'defaults' => [
         'guard' => 'web',
-        'api',
         'passwords' => 'akuns',
     ],
 
@@ -17,14 +16,14 @@ return [
     'providers' => [
         'akuns' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Akun::class, // Pastikan path ini benar
+            'model' => App\Models\Akun::class,
         ],
     ],
 
     'passwords' => [
         'akuns' => [
             'provider' => 'akuns',
-            'table' => 'password_reset_tokens',
+            'table' => 'password_reset_tokens', // Tidak digunakan karena pakai session
             'expire' => 60,
             'throttle' => 60,
         ],

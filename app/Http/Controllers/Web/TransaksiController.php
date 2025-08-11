@@ -22,26 +22,27 @@ use Carbon\Carbon;
 
 class TransaksiController extends Controller
 {
-    /**
-     * Menampilkan daftar transaksi dengan server-side DataTables.
-     */
     public function index(Request $request)
     {
         try {
             if ($request->ajax()) {
-                $query = Transaksi::with(['orang', 'transaksiDetails']);
+                $query = Transaksi::with(['orang']);
 
-                // Filter berdasarkan jenis filter
-                if ($request->has('filter_type') && !empty($request->filter_type)) {
-                    if ($request->filter_type === 'specific_date' && $request->has('specific_date') && !empty($request->specific_date)) {
-                        $query->whereDate('tanggal_transaksi', $request->specific_date);
-                    } elseif ($request->filter_type === 'date_range' && $request->has('start_date') && !empty($request->start_date) && $request->has('end_date') && !empty($request->end_date)) {
-                        $query->whereBetween('tanggal_transaksi', [$request->start_date, $request->end_date]);
-                    } elseif ($request->filter_type === 'month' && $request->has('month') && !empty($request->month)) {
-                        $date = Carbon::createFromFormat('Y-m', $request->month);
-                        $query->whereMonth('tanggal_transaksi', $date->month)
-                              ->whereYear('tanggal_transaksi', $date->year);
-                    }
+                // Apply filters
+                if ($request->filter_type === 'specific_date' && $request->specific_date) {
+                    $query->whereDate('tanggal_transaksi', $request->specific_date);
+                } elseif ($request->filter_type === 'date_range' && $request->start_date && $request->end_date) {
+                    $query->whereBetween('tanggal_transaksi', [$request->start_date, $request->end_date]);
+                } elseif ($request->filter_type === 'month' && $request->month) {
+                    $query->whereYear('tanggal_transaksi', substr($request->month, 0, 4))
+                          ->whereMonth('tanggal_transaksi', substr($request->month, 5, 2));
+                } elseif ($request->filter_type === 'belum_lunas') {
+                    $query->where(function ($q) {
+                        $q->whereDoesntHave('pembayaran')
+                          ->orWhereHas('pembayaran', function ($q2) {
+                              $q2->whereRaw('jumlah_pembayaran < total_transaksi');
+                          });
+                    });
                 }
 
                 return DataTables::of($query)
@@ -49,43 +50,67 @@ class TransaksiController extends Controller
                     ->addColumn('nama_orang', function ($transaksi) {
                         return $transaksi->orang ? $transaksi->orang->nama_lengkap : '-';
                     })
-                    ->addColumn('tanggal_transaksi', function ($transaksi) {
-                        return $transaksi->tanggal_transaksi instanceof \Carbon\Carbon 
-                            ? $transaksi->tanggal_transaksi->format('Y-m-d')
-                            : ($transaksi->tanggal_transaksi ? substr($transaksi->tanggal_transaksi, 0, 10) : '-');
+                    ->addColumn('total_transaksi', function ($transaksi) {
+                        return $transaksi->total_transaksi;
                     })
-                    ->addColumn('status', function ($transaksi) {
-                        return $transaksi->status_valid ? 'Valid' : 'Batal';
+                    ->addColumn('status_pembayaran', function ($transaksi) {
+                        $pembayaran = Pembayaran::where('id_orang', $transaksi->id_orang)
+                            ->where('total_transaksi', $transaksi->total_transaksi)
+                            ->where('tanggal_pembayaran', '>=', $transaksi->tanggal_transaksi)
+                            ->orderBy('tanggal_pembayaran', 'desc')
+                            ->orderBy('waktu_pembayaran', 'desc')
+                            ->first();
+                        if ($pembayaran) {
+                            if ($pembayaran->jumlah_pembayaran >= $pembayaran->total_transaksi) {
+                                return 'Lunas';
+                            } elseif ($pembayaran->jumlah_pembayaran > 0 || $pembayaran->metode_pembayaran !== 'Belum Dibayar') {
+                                return 'Belum Lunas';
+                            }
+                        }
+                        return 'Belum Dibayar';
                     })
                     ->addColumn('action', function ($transaksi) {
-                        return '
+                        $pembayaran = Pembayaran::where('id_orang', $transaksi->id_orang)
+                            ->where('total_transaksi', $transaksi->total_transaksi)
+                            ->where('tanggal_pembayaran', '>=', $transaksi->tanggal_transaksi)
+                            ->orderBy('tanggal_pembayaran', 'desc')
+                            ->orderBy('waktu_pembayaran', 'desc')
+                            ->first();
+                        $action = '
                             <div class="action-buttons">
                                 <a href="' . route('transaksi.show', $transaksi->id_transaksi) . '" class="btn btn-info btn-sm">
                                     <i class="fas fa-eye action-icon"></i>
                                 </a>
-                                <form action="' . route('transaksi.destroy', $transaksi->id_transaksi) . '" method="POST" class="d-inline">
-                                    ' . csrf_field() . '
-                                    ' . method_field('DELETE') . '
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin ingin menghapus transaksi ini?\')">
-                                        <i class="fas fa-trash action-icon"></i>
-                                    </button>
-                                </form>
-                            </div>';
+                                <a href="' . route('transaksi.print', $transaksi->id_transaksi) . '" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-file-pdf action-icon"></i>
+                                </a>';
+                        if (!$pembayaran || ($pembayaran->jumlah_pembayaran < $pembayaran->total_transaksi)) {
+                            $pembayaranId = $pembayaran ? $pembayaran->id_pembayaran : 0;
+                            $action .= '
+                                <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#pembayaranModal"
+                                    data-id="' . $pembayaranId . '"
+                                    data-id_orang="' . $transaksi->id_orang . '"
+                                    data-total_transaksi="' . $transaksi->total_transaksi . '"
+                                    data-sisa="' . ($pembayaran ? ($pembayaran->total_transaksi - $pembayaran->jumlah_pembayaran) : $transaksi->total_transaksi) . '"
+                                    data-id_transaksi="' . $transaksi->id_transaksi . '">
+                                    <i class="fas fa-money-bill action-icon"></i>
+                                </button>';
+                        }
+                        $action .= '</div>';
+                        return $action;
                     })
                     ->rawColumns(['action'])
                     ->make(true);
             }
 
-            return view('admin.pages.transaksi.index');
+            $orangs = Orang::all();
+            return view('admin.pages.transaksi.index', compact('orangs'));
         } catch (\Exception $e) {
             Log::error('Gagal memuat daftar transaksi: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Gagal memuat daftar transaksi. Silakan coba lagi.');
         }
     }
 
-    /**
-     * Menampilkan form untuk membuat transaksi baru.
-     */
     public function create()
     {
         $orangs = Orang::with(['mitras' => function ($query) {
@@ -96,15 +121,11 @@ class TransaksiController extends Controller
         })
         ->orWhereDoesntHave('mitras')
         ->get();
-        $tabungs = Tabung::with('jenisTabung', 'statusTabung')->get(); // Ambil semua tabung tanpa filter status
+        $tabungs = Tabung::with('jenisTabung', 'statusTabung')->get();
         $jenisTransaksis = JenisTransaksiDetail::all();
         return view('admin.pages.transaksi.create', compact('orangs', 'tabungs', 'jenisTransaksis'));
     }
 
-    /**
-     * Menyimpan transaksi baru ke database dan membuat entri pembayaran.
-     * Menambahkan logika untuk memperbarui tanggal_pinjam dan waktu_pinjam di pengembalians untuk transaksi isi ulang.
-     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -201,7 +222,6 @@ class TransaksiController extends Controller
                     ]);
                 }
 
-                // Tambahan: Perbarui tanggal_pinjam dan waktu_pinjam untuk transaksi isi ulang
                 if (in_array(strtolower($jenisTransaksi->jenis_transaksi), ['isi ulang', 'isi_ulang'])) {
                     if (!in_array($tabung->id_status_tabung, [$statusTersedia->id_status_tabung, $statusDipinjam->id_status_tabung])) {
                         throw new \Exception('Tabung ' . $tabung->kode_tabung . ' tidak dapat diisi ulang.');
@@ -219,7 +239,6 @@ class TransaksiController extends Controller
                 }
             }
 
-            // Membuat entri pembayaran setelah transaksi berhasil dibuat
             Pembayaran::create([
                 'id_orang' => $request->id_orang,
                 'total_transaksi' => $total_transaksi,
@@ -239,51 +258,73 @@ class TransaksiController extends Controller
         }
     }
 
-    /**
-     * Menampilkan detail transaksi.
-     */
-    public function show($id)
+     public function show($id_transaksi)
     {
-        $transaksi = Transaksi::with(['orang', 'transaksiDetails.jenisTransaksiDetail', 'transaksiDetails.tabung.jenisTabung'])->findOrFail($id);
-        return view('admin.pages.transaksi.show', compact('transaksi'));
-    }
-
-    /**
-     * Menghapus transaksi dari database.
-     */
-    public function destroy($id)
-    {
-        DB::beginTransaction();
         try {
-            $transaksi = Transaksi::findOrFail($id);
-            $transaksi->delete();
-            DB::commit();
-            return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil dihapus.');
+            $transaksi = Transaksi::with(['orang', 'transaksiDetails', 'transaksiDetails.tabung', 'transaksiDetails.tabung.jenisTabung', 'transaksiDetails.jenisTransaksiDetail'])
+                ->findOrFail($id_transaksi);
+            
+            $pembayaran = Pembayaran::where('id_orang', $transaksi->id_orang)
+                ->where('total_transaksi', $transaksi->total_transaksi)
+                ->where('tanggal_pembayaran', '>=', $transaksi->tanggal_transaksi)
+                ->orderBy('tanggal_pembayaran', 'desc')
+                ->orderBy('waktu_pembayaran', 'desc')
+                ->first();
+                
+            Log::info('Memuat halaman transaksi.show untuk id_transaksi: ' . $id_transaksi, [
+                'id_transaksi' => $id_transaksi,
+                'pembayaran_id' => $pembayaran ? $pembayaran->id_pembayaran : null
+            ]);
+            
+            return view('admin.pages.transaksi.show', compact('transaksi', 'pembayaran'));
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Gagal menghapus transaksi: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Gagal menghapus transaksi. Silakan coba lagi.');
+            Log::error('Gagal memuat detail transaksi: ' . $e->getMessage());
+            return redirect()->route('transaksi.index')
+                ->with('error', 'Gagal memuat detail transaksi: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Ekspor data transaksi ke Excel.
-     */
+
+    public function print($id)
+    {
+        try {
+            $transaksi = Transaksi::with(['orang', 'transaksiDetails.jenisTransaksiDetail', 'transaksiDetails.tabung.jenisTabung'])->findOrFail($id);
+            $pdf = Pdf::loadView('admin.pages.transaksi.transaksi_print', compact('transaksi'));
+            return $pdf->download('nota_transaksi_' . $transaksi->id_transaksi . '_' . date('Ymd_His') . '.pdf');
+        } catch (\Exception $e) {
+            Log::error('Gagal mencetak nota transaksi ke PDF: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mencetak nota transaksi ke PDF: ' . $e->getMessage());
+        }
+    }
+
     public function exportExcel(Request $request)
     {
         try {
             $query = Transaksi::with(['orang', 'transaksiDetails']);
             
-            // Terapkan filter berdasarkan jenis filter
             if ($request->has('filter_type') && !empty($request->filter_type)) {
                 if ($request->filter_type === 'specific_date' && $request->has('specific_date') && !empty($request->specific_date)) {
                     $query->whereDate('tanggal_transaksi', $request->specific_date);
                 } elseif ($request->filter_type === 'date_range' && $request->has('start_date') && !empty($request->start_date) && $request->has('end_date') && !empty($request->end_date)) {
                     $query->whereBetween('tanggal_transaksi', [$request->start_date, $request->end_date]);
                 } elseif ($request->filter_type === 'month' && $request->has('month') && !empty($request->month)) {
-                    $date = Carbon::createFromFormat('Y-m', $request->month);
-                    $query->whereMonth('tanggal_transaksi', $date->month)
-                          ->whereYear('tanggal_transaksi', $date->year);
+                    try {
+                        $date = Carbon::createFromFormat('Y-m', $request->month);
+                        $query->whereMonth('tanggal_transaksi', $date->month)
+                              ->whereYear('tanggal_transaksi', $date->year);
+                    } catch (\Exception $e) {
+                        Log::warning('Format bulan tidak valid untuk export Excel: ' . $request->month);
+                    }
+                } elseif ($request->filter_type === 'belum_lunas') {
+                    $query->leftJoin('pembayarans', function ($join) {
+                        $join->on('pembayarans.id_orang', '=', 'transaksis.id_orang')
+                             ->on('pembayarans.total_transaksi', '=', 'transaksis.total_transaksi');
+                    })
+                    ->where(function ($q) {
+                        $q->whereNull('pembayarans.id_pembayaran')
+                          ->orWhere('pembayarans.metode_pembayaran', 'Belum Dibayar')
+                          ->orWhereRaw('COALESCE(pembayarans.jumlah_pembayaran, 0) < transaksis.total_transaksi');
+                    })->select('transaksis.*');
                 }
             }
 
@@ -312,7 +353,6 @@ class TransaksiController extends Controller
                                 ? $transaksi->tanggal_transaksi->format('Y-m-d')
                                 : ($transaksi->tanggal_transaksi ? substr($transaksi->tanggal_transaksi, 0, 10) : '-'),
                             'Waktu Transaksi' => $transaksi->waktu_transaksi ?? '-',
-                            'Status' => $transaksi->status_valid ? 'Valid' : 'Batal',
                         ];
                     });
                 }
@@ -325,7 +365,6 @@ class TransaksiController extends Controller
                         'Total Transaksi',
                         'Tanggal Transaksi',
                         'Waktu Transaksi',
-                        'Status',
                     ];
                 }
             }, 'data_transaksi_' . date('Ymd_His') . '.xlsx');
@@ -335,24 +374,34 @@ class TransaksiController extends Controller
         }
     }
 
-    /**
-     * Ekspor data transaksi ke PDF.
-     */
     public function exportPdf(Request $request)
     {
         try {
             $query = Transaksi::with(['orang', 'transaksiDetails']);
             
-            // Terapkan filter berdasarkan jenis filter
             if ($request->has('filter_type') && !empty($request->filter_type)) {
                 if ($request->filter_type === 'specific_date' && $request->has('specific_date') && !empty($request->specific_date)) {
                     $query->whereDate('tanggal_transaksi', $request->specific_date);
                 } elseif ($request->filter_type === 'date_range' && $request->has('start_date') && !empty($request->start_date) && $request->has('end_date') && !empty($request->end_date)) {
                     $query->whereBetween('tanggal_transaksi', [$request->start_date, $request->end_date]);
                 } elseif ($request->filter_type === 'month' && $request->has('month') && !empty($request->month)) {
-                    $date = Carbon::createFromFormat('Y-m', $request->month);
-                    $query->whereMonth('tanggal_transaksi', $date->month)
-                          ->whereYear('tanggal_transaksi', $date->year);
+                    try {
+                        $date = Carbon::createFromFormat('Y-m', $request->month);
+                        $query->whereMonth('tanggal_transaksi', $date->month)
+                              ->whereYear('tanggal_transaksi', $date->year);
+                    } catch (\Exception $e) {
+                        Log::warning('Format bulan tidak valid untuk export PDF: ' . $request->month);
+                    }
+                } elseif ($request->filter_type === 'belum_lunas') {
+                    $query->leftJoin('pembayarans', function ($join) {
+                        $join->on('pembayarans.id_orang', '=', 'transaksis.id_orang')
+                             ->on('pembayarans.total_transaksi', '=', 'transaksis.total_transaksi');
+                    })
+                    ->where(function ($q) {
+                        $q->whereNull('pembayarans.id_pembayaran')
+                          ->orWhere('pembayarans.metode_pembayaran', 'Belum Dibayar')
+                          ->orWhereRaw('COALESCE(pembayarans.jumlah_pembayaran, 0) < transaksis.total_transaksi');
+                    })->select('transaksis.*');
                 }
             }
 

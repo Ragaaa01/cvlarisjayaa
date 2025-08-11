@@ -122,8 +122,11 @@ class OrangMitraController extends Controller
                                        ->where('status_valid', true)
                                        ->exists();
 
-            // Set status_valid: true jika belum ada yang valid, false jika sudah ada
+            // Tentukan status_valid dan pesan sukses
             $statusValid = !$hasValidOrang;
+            $statusMessage = $statusValid
+                ? 'Berhasil Dibuat Status Valid karena mitra belum memiliki orang dengan status valid.'
+                : 'Berhasil Dibuat Status Tidak Valid karena mitra sudah memiliki orang dengan status valid.';
 
             OrangMitra::create([
                 'id_orang' => $request->id_orang,
@@ -131,7 +134,7 @@ class OrangMitraController extends Controller
                 'status_valid' => $statusValid,
             ]);
 
-            return redirect()->route('admin.orang_mitra.index')->with('success', 'Data orang mitra berhasil ditambahkan.');
+            return redirect()->route('admin.orang_mitra.index')->with('success', $statusMessage);
         } catch (Exception $e) {
             Log::error('Gagal menyimpan data orang mitra: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Gagal menyimpan data orang mitra. Silakan coba lagi.')->withInput();

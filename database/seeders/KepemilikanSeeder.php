@@ -13,7 +13,7 @@ class KepemilikanSeeder extends Seeder
      */
     public function run(): void
     {
-        Kepemilikan::firstOrCreate(['keterangan_kepemilikan' => 'milik_laris_jaya_gas']);
-        Kepemilikan::firstOrCreate(['keterangan_kepemilikan' => 'milik_pelanggan']);
+        Kepemilikan::firstOrCreate(['keterangan_kepemilikan' => 'milik laris jaya gas']);
+        Kepemilikan::firstOrCreate(['keterangan_kepemilikan' => 'milik pelanggan']);
     }
 }

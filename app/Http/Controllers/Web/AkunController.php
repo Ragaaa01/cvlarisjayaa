@@ -44,13 +44,13 @@ class AkunController extends Controller
                     ->addColumn('action', function ($akun) {
                         return '
                             <div class="action-buttons">
-                                <a href="' . route('admin.akun.show', $akun->id_akuns) . '" class="btn btn-info btn-sm">
+                                <a href="' . route('admin.akun.show', $akun->id_akun) . '" class="btn btn-info btn-sm">
                                     <i class="fas fa-eye action-icon"></i>
                                 </a>
-                                <a href="' . route('admin.akun.edit', $akun->id_akuns) . '" class="btn btn-warning btn-sm">
+                                <a href="' . route('admin.akun.edit', $akun->id_akun) . '" class="btn btn-warning btn-sm">
                                     <i class="fas fa-edit action-icon"></i>
                                 </a>
-                                <form action="' . route('admin.akun.destroy', $akun->id_akuns) . '" method="POST" class="d-inline">
+                                <form action="' . route('admin.akun.destroy', $akun->id_akun) . '" method="POST" class="d-inline">
                                     ' . csrf_field() . '
                                     ' . method_field('DELETE') . '
                                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin ingin menghapus data ini?\')">
@@ -129,10 +129,10 @@ class AkunController extends Controller
     /**
      * Menampilkan detail akun.
      */
-    public function show($id_akuns)
+    public function show($id_akun)
     {
         try {
-            $akun = Akun::with(['role', 'orang'])->findOrFail($id_akuns);
+            $akun = Akun::with(['role', 'orang'])->findOrFail($id_akun);
             return view('admin.pages.akun.show', compact('akun'));
         } catch (Exception $e) {
             Log::error('Gagal memuat detail akun: ' . $e->getMessage());
@@ -143,13 +143,13 @@ class AkunController extends Controller
     /**
      * Menampilkan form untuk mengedit akun.
      */
-    public function edit($id_akuns)
+    public function edit($id_akun)
     {
         try {
-            $akun = Akun::findOrFail($id_akuns);
+            $akun = Akun::findOrFail($id_akun);
             $roles = Role::all();
             // Ambil semua orang kecuali yang sudah digunakan oleh akun lain
-            $usedOrangIds = Akun::where('id_akuns', '!=', $id_akuns)->pluck('id_orang');
+            $usedOrangIds = Akun::where('id_akun', '!=', $id_akun)->pluck('id_orang');
             $orangs = Orang::whereNotIn('id_orang', $usedOrangIds)->orWhere('id_orang', $akun->id_orang)->get();
             return view('admin.pages.akun.edit', compact('akun', 'roles', 'orangs'));
         } catch (Exception $e) {
@@ -161,13 +161,13 @@ class AkunController extends Controller
     /**
      * Memperbarui data akun di database.
      */
-    public function update(Request $request, $id_akuns)
+    public function update(Request $request, $id_akun)
     {
         try {
-            $akun = Akun::findOrFail($id_akuns);
+            $akun = Akun::findOrFail($id_akun);
 
             $validator = Validator::make($request->all(), [
-                'email' => 'nullable|email|max:255|unique:akuns,email,' . $id_akuns . ',id_akuns',
+                'email' => 'nullable|email|max:255|unique:akuns,email,' . $id_akun . ',id_akun',
                 'password' => 'nullable|string|min:8|confirmed',
                 'id_role' => 'required|exists:roles,id_role',
                 'id_orang' => 'required|exists:orangs,id_orang',
@@ -180,7 +180,7 @@ class AkunController extends Controller
 
             // Cek apakah orang sudah digunakan oleh akun lain
             $exists = Akun::where('id_orang', $request->id_orang)
-                          ->where('id_akuns', '!=', $id_akuns)
+                          ->where('id_akun', '!=', $id_akun)
                           ->exists();
             if ($exists) {
                 return redirect()->back()->with('error', 'Orang ini sudah memiliki akun lain.')->withInput();
@@ -210,10 +210,10 @@ class AkunController extends Controller
     /**
      * Menghapus data akun dari database.
      */
-    public function destroy($id_akuns)
+    public function destroy($id_akun)
     {
         try {
-            $akun = Akun::findOrFail($id_akuns);
+            $akun = Akun::findOrFail($id_akun);
             $akun->delete();
 
             return redirect()->route('admin.akun.index')->with('success', 'Data akun berhasil dihapus.');

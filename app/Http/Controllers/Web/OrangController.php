@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use Exception;
 use App\Models\Orang;
+use App\Models\Transaksi;
+use App\Models\Pembayaran;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
@@ -63,7 +65,7 @@ class OrangController extends Controller
 
             return view('admin.pages.orang.index');
         } catch (Exception $e) {
-            Log::error('Gagal memuat daftar orang: ' . $e->getMessage());
+            Log::error('Gagal memuat daftar orang: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return redirect()->back()->with('error', 'Gagal memuat daftar orang. Silakan coba lagi.');
         }
     }
@@ -76,7 +78,7 @@ class OrangController extends Controller
         try {
             return view('admin.pages.orang.create');
         } catch (Exception $e) {
-            Log::error('Gagal memuat form tambah orang: ' . $e->getMessage());
+            Log::error('Gagal memuat form tambah orang: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return redirect()->back()->with('error', 'Gagal memuat form tambah orang. Silakan coba lagi.');
         }
     }
@@ -102,21 +104,39 @@ class OrangController extends Controller
 
             return redirect()->route('admin.orang.index')->with('success', 'Data orang berhasil ditambahkan.');
         } catch (Exception $e) {
-            Log::error('Gagal menyimpan data orang: ' . $e->getMessage());
+            Log::error('Gagal menyimpan data orang: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return redirect()->back()->with('error', 'Gagal menyimpan data orang. Silakan coba lagi.')->withInput();
         }
     }
 
     /**
-     * Menampilkan detail data orang.
+     * Menampilkan detail data orang dan riwayat transaksi.
      */
     public function show($id)
     {
         try {
-            $orang = Orang::findOrFail($id);
-            return view('admin.pages.orang.show', compact('orang'));
+            $orang = Orang::with(['transaksis.transaksiDetails.jenisTransaksiDetail', 'transaksis.transaksiDetails.tabung.jenisTabung', 'transaksis.transaksiDetails.pengembalian'])->findOrFail($id);
+
+            // Ambil transaksi dengan relasi pembayaran untuk orang ini
+            $transaksis = $orang->transaksis->map(function ($transaksi) use ($orang) {
+                // Ambil pembayaran terkait orang ini
+                $pembayaran = Pembayaran::where('id_orang', $orang->id_orang)
+                    ->where('total_transaksi', $transaksi->total_transaksi)
+                    ->first();
+
+                // Tentukan status transaksi
+                $isLunas = $pembayaran && $pembayaran->jumlah_pembayaran >= $pembayaran->total_transaksi;
+                $hasActivePeminjaman = $transaksi->transaksiDetails->some(function ($detail) {
+                    return $detail->pengembalian && is_null($detail->pengembalian->tanggal_pengembalian);
+                });
+                $transaksi->is_selesai = $isLunas && !$hasActivePeminjaman;
+                $transaksi->pembayaran = $pembayaran; // Tambahkan pembayaran ke objek transaksi
+                return $transaksi;
+            });
+
+            return view('admin.pages.orang.show', compact('orang', 'transaksis'));
         } catch (Exception $e) {
-            Log::error('Gagal memuat detail orang: ' . $e->getMessage());
+            Log::error('Gagal memuat detail orang: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return redirect()->back()->with('error', 'Gagal memuat detail orang. Silakan coba lagi.');
         }
     }
@@ -130,7 +150,7 @@ class OrangController extends Controller
             $orang = Orang::findOrFail($id);
             return view('admin.pages.orang.edit', compact('orang'));
         } catch (Exception $e) {
-            Log::error('Gagal memuat form edit orang: ' . $e->getMessage());
+            Log::error('Gagal memuat form edit orang: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return redirect()->back()->with('error', 'Gagal memuat form edit orang. Silakan coba lagi.');
         }
     }
@@ -158,7 +178,7 @@ class OrangController extends Controller
 
             return redirect()->route('admin.orang.index')->with('success', 'Data orang berhasil diperbarui.');
         } catch (Exception $e) {
-            Log::error('Gagal memperbarui data orang: ' . $e->getMessage());
+            Log::error('Gagal memperbarui data orang: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return redirect()->back()->with('error', 'Gagal memperbarui data orang. Silakan coba lagi.')->withInput();
         }
     }
@@ -174,7 +194,7 @@ class OrangController extends Controller
 
             return redirect()->route('admin.orang.index')->with('success', 'Data orang berhasil dihapus.');
         } catch (Exception $e) {
-            Log::error('Gagal menghapus data orang: ' . $e->getMessage());
+            Log::error('Gagal menghapus data orang: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return redirect()->back()->with('error', 'Gagal menghapus data orang. Silakan coba lagi.');
         }
     }
@@ -219,7 +239,7 @@ class OrangController extends Controller
                 }
             }, 'data_orang_' . date('Ymd_His') . '.xlsx');
         } catch (Exception $e) {
-            Log::error('Gagal export data orang ke Excel: ' . $e->getMessage());
+            Log::error('Gagal export data orang ke Excel: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return redirect()->back()->with('error', 'Gagal export data orang ke Excel. Silakan coba lagi.');
         }
     }
@@ -234,7 +254,7 @@ class OrangController extends Controller
             $pdf = Pdf::loadView('admin.pages.orang.orang_export', compact('orangs'));
             return $pdf->download('data_orang_' . date('Ymd_His') . '.pdf');
         } catch (Exception $e) {
-            Log::error('Gagal export data orang ke PDF: ' . $e->getMessage());
+            Log::error('Gagal export data orang ke PDF: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return redirect()->back()->with('error', 'Gagal export data orang ke PDF. Silakan coba lagi.');
         }
     }

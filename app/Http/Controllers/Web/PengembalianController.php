@@ -14,11 +14,12 @@ use Illuminate\Support\Facades\Validator;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PengembalianController extends Controller
 {
     /**
-     * Menampilkan daftar pengembalian dengan server-side DataTables dan memeriksa pengembalian otomatis.
+     * Menampilkan daftar pengembalian yang sedang berlangsung dengan server-side DataTables.
      */
     public function index(Request $request)
     {
@@ -29,15 +30,9 @@ class PengembalianController extends Controller
             $this->updateTanggalPinjamDariTransaksi();
 
             if ($request->ajax()) {
-                $status = $request->query('status', 'berlangsung');
                 $query = Pengembalian::with(['tabung.jenisTabung', 'transaksiDetail.transaksi.orang'])
-                    ->select('pengembalians.*');
-
-                if ($status === 'berlangsung') {
-                    $query->whereNull('tanggal_pengembalian');
-                } elseif ($status === 'selesai') {
-                    $query->whereNotNull('tanggal_pengembalian');
-                }
+                    ->select('pengembalians.*')
+                    ->whereNull('tanggal_pengembalian'); // Hanya pengembalian yang sedang berlangsung
 
                 return DataTables::of($query)
                     ->addIndexColumn()
@@ -59,11 +54,6 @@ class PengembalianController extends Controller
                             ? $pengembalian->tanggal_pinjam->format('Y-m-d')
                             : ($pengembalian->tanggal_pinjam ? substr($pengembalian->tanggal_pinjam, 0, 10) : '-');
                     })
-                    ->addColumn('tanggal_pengembalian', function ($pengembalian) {
-                        return $pengembalian->tanggal_pengembalian instanceof \Carbon\Carbon
-                            ? $pengembalian->tanggal_pengembalian->format('Y-m-d')
-                            : ($pengembalian->tanggal_pengembalian ? substr($pengembalian->tanggal_pengembalian, 0, 10) : '-');
-                    })
                     ->addColumn('sisa_deposit', function ($pengembalian) {
                         return 'Rp ' . number_format($pengembalian->sisa_deposit, 2, ',', '.');
                     })
@@ -75,17 +65,14 @@ class PengembalianController extends Controller
                             <div class="action-buttons">
                                 <a href="' . route('pengembalian.show', $pengembalian->id_pengembalian) . '" class="btn btn-info btn-sm">
                                     <i class="fas fa-eye action-icon"></i>
-                                </a>';
-                        if (is_null($pengembalian->tanggal_pengembalian)) {
-                            $actionButtons .= '
+                                </a>
                                 <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#pengembalianModal"
                                     data-id="' . $pengembalian->id_pengembalian . '"
                                     data-kode-tabung="' . ($pengembalian->tabung ? $pengembalian->tabung->kode_tabung : '-') . '"
                                     data-deposit="' . $pengembalian->deposit . '">
                                     <i class="fas fa-undo action-icon"></i>
-                                </button>';
-                        }
-                        $actionButtons .= '</div>';
+                                </button>
+                            </div>';
                         return $actionButtons;
                     })
                     ->rawColumns(['action'])
@@ -99,9 +86,7 @@ class PengembalianController extends Controller
         }
     }
 
-    /**
-     * Memeriksa pengembalian yang sudah melewati batas waktu (deposit habis) dan menandainya sebagai hilang.
-     */
+    // Metode checkOverdueReturns dan updateTanggalPinjamDariTransaksi tetap sama
     protected function checkOverdueReturns()
     {
         DB::beginTransaction();
@@ -126,7 +111,7 @@ class PengembalianController extends Controller
                         'jumlah_keterlambatan_bulan' => $periodeKeterlambatan,
                         'total_denda' => $pengembalian->deposit,
                         'denda_kondisi_tabung' => $pengembalian->deposit,
-                        'biaya_admin' => 0, // Tidak ada biaya admin untuk pengembalian otomatis
+                        'biaya_admin' => 0,
                         'sisa_deposit' => 0,
                         'id_status_tabung' => $statusHilang->id_status_tabung,
                     ]);
@@ -143,9 +128,6 @@ class PengembalianController extends Controller
         }
     }
 
-    /**
-     * Memperbarui tanggal pinjam berdasarkan transaksi isi ulang terbaru untuk tabung yang masih dipinjam.
-     */
     protected function updateTanggalPinjamDariTransaksi()
     {
         DB::beginTransaction();
@@ -153,7 +135,6 @@ class PengembalianController extends Controller
             $pengembalians = Pengembalian::whereNull('tanggal_pengembalian')->get();
 
             foreach ($pengembalians as $pengembalian) {
-                // Cari transaksi isi ulang terbaru untuk tabung yang sama
                 $latestTransaksiDetail = TransaksiDetail::where('id_tabung', $pengembalian->id_tabung)
                     ->join('transaksis', 'transaksi_details.id_transaksi', '=', 'transaksis.id_transaksi')
                     ->orderBy('transaksis.tanggal_transaksi', 'desc')
@@ -178,9 +159,7 @@ class PengembalianController extends Controller
         }
     }
 
-    /**
-     * Menampilkan detail pengembalian.
-     */
+    // Metode show, update, dan print tetap sama
     public function show($id)
     {
         try {
@@ -193,9 +172,6 @@ class PengembalianController extends Controller
         }
     }
 
-    /**
-     * Memperbarui data pengembalian (proses pengembalian tabung).
-     */
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -223,7 +199,6 @@ class PengembalianController extends Controller
                 return redirect()->route('pengembalian.index')->with('error', $message);
             }
 
-            // Pastikan tabung terkait ada
             if (!$pengembalian->tabung) {
                 throw new \Exception('Tabung tidak ditemukan untuk pengembalian ini.');
             }
@@ -231,17 +206,15 @@ class PengembalianController extends Controller
             $now = Carbon::now();
             $tanggalPinjam = Carbon::parse($pengembalian->tanggal_pinjam);
             $selisihHari = $tanggalPinjam->diffInDays($now);
-            $periodeKeterlambatan = floor(($selisihHari - 30) / 31); // Mulai terhitung setelah 30 hari
-            $jumlahKeterlambatanPeriode = max(0, $periodeKeterlambatan); // Pastikan tidak negatif
-            $dendaKeterlambatan = $jumlahKeterlambatanPeriode * 50000; // Rp 50.000 per periode 31 hari
+            $periodeKeterlambatan = floor(($selisihHari - 30) / 31);
+            $jumlahKeterlambatanPeriode = max(0, $periodeKeterlambatan);
+            $dendaKeterlambatan = $jumlahKeterlambatanPeriode * 50000;
             $deposit = floatval($pengembalian->deposit);
 
-            // Tentukan biaya admin dan denda kondisi tabung berdasarkan kondisi
-            $biayaAdmin = $request->kondisi_tabung === 'Hilang' ? 0 : 50000; // Biaya admin 0 jika hilang
+            $biayaAdmin = $request->kondisi_tabung === 'Hilang' ? 0 : floatval($request->biaya_admin);
             $dendaKondisiTabung = $request->kondisi_tabung === 'Hilang' ? $deposit : ($request->kondisi_tabung === 'Baik' ? 0 : floatval($request->denda_kondisi_tabung));
             $totalDenda = $dendaKeterlambatan + $dendaKondisiTabung;
 
-            // Tentukan status tabung berdasarkan kondisi
             $statusMap = [
                 'Baik' => 'tersedia',
                 'Rusak' => 'rusak',
@@ -253,20 +226,17 @@ class PengembalianController extends Controller
                 throw new \Exception('Status tabung "' . $statusTabungValue . '" tidak ditemukan di database.');
             }
 
-            // Hitung sisa deposit, batasi total denda agar tidak melebihi deposit
             if ($request->kondisi_tabung === 'Hilang' || $totalDenda + $biayaAdmin >= $deposit) {
-                // Jika tabung hilang atau total denda + biaya admin melebihi deposit, ambil seluruh deposit
                 $dendaKondisiTabung = $deposit;
                 $totalDenda = $deposit;
                 $sisaDeposit = 0;
-                $biayaAdmin = 0; // Pastikan biaya admin 0 jika deposit habis
+                $biayaAdmin = 0;
                 $statusTabungValue = 'hilang';
                 $statusTabung = StatusTabung::where('status_tabung', $statusTabungValue)->first();
                 if (!$statusTabung) {
                     throw new \Exception('Status tabung "hilang" tidak ditemukan di database.');
                 }
             } else {
-                // Jika deposit belum habis, hitung seperti biasa
                 $sisaDeposit = $deposit - ($totalDenda + $biayaAdmin);
             }
 
@@ -281,19 +251,18 @@ class PengembalianController extends Controller
                 'id_status_tabung' => $statusTabung->id_status_tabung,
             ]);
 
-            // Update status tabung di tabel tabungs
             $pengembalian->tabung->update(['id_status_tabung' => $statusTabung->id_status_tabung]);
 
             DB::commit();
 
+            $successMessage = 'Tabung ' . $pengembalian->tabung->kode_tabung . ' berhasil dikembalikan.';
             if ($request->ajax()) {
                 return response()->json([
-                    'success' => 'Tabung ' . $pengembalian->tabung->kode_tabung . ' berhasil dikembalikan.',
-                    'kode_tabung' => $pengembalian->tabung->kode_tabung,
-                    'redirect' => route('pengembalian.index')
+                    'success' => $successMessage,
+                    'redirect' => route('pengembalian.show', $pengembalian->id_pengembalian)
                 ]);
             }
-            return redirect()->route('pengembalian.index')->with('success', 'Tabung ' . $pengembalian->tabung->kode_tabung . ' berhasil dikembalikan.');
+            return redirect()->route('pengembalian.show', $pengembalian->id_pengembalian)->with('success', $successMessage);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Gagal memproses pengembalian ID ' . $id . ': ' . $e->getMessage());
@@ -301,6 +270,19 @@ class PengembalianController extends Controller
                 return response()->json(['error' => 'Gagal memproses pengembalian: ' . $e->getMessage()], 500);
             }
             return redirect()->back()->with('error', 'Gagal memproses pengembalian: ' . $e->getMessage());
+        }
+    }
+
+    public function print($id)
+    {
+        try {
+            $pengembalian = Pengembalian::with(['tabung.jenisTabung', 'transaksiDetail.transaksi.orang', 'statusTabung'])
+                ->findOrFail($id);
+            $pdf = Pdf::loadView('admin.pages.pengembalian.pengembalian_print', compact('pengembalian'));
+            return $pdf->download('nota_pengembalian_' . $pengembalian->id_pengembalian . '_' . date('Ymd_His') . '.pdf');
+        } catch (\Exception $e) {
+            Log::error('Gagal mencetak nota pengembalian ke PDF: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mencetak nota pengembalian ke PDF: ' . $e->getMessage());
         }
     }
 }

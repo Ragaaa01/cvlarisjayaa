@@ -17,6 +17,8 @@ use App\Http\Controllers\Web\TransaksiController;
 use App\Http\Controllers\Web\DetailTransaksiController;
 use App\Http\Controllers\Web\PengembalianController;
 use App\Http\Controllers\Web\PembayaranController;
+use App\Http\Controllers\Web\ForgotPasswordController;
+use App\Http\Controllers\Web\ResetPasswordController;
 
 Route::get('/', fn () => view('welcome'))->name('welcome');
 
@@ -26,9 +28,37 @@ Route::controller(AuthController::class)->group(function () {
     Route::post('/logout', 'logout')->name('logout');
 });
 
-Route::middleware(['auth', 'role:administrator'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', [AdminController::class, 'adminDashboard'])->name('dashboard');
+// Routes untuk lupa password dan reset
+Route::get('password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('password/verify', [ForgotPasswordController::class, 'verifyEmail'])->name('password.email');
+Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
 
+// Routes untuk Administrator dan Karyawan (Transaksi, Pembayaran, Pengembalian)
+Route::middleware(['auth:web', 'role:administrator,karyawan'])->prefix('admin')->group(function () {
+    // Dashboard untuk Administrator
+    Route::middleware('role:administrator')->get('/dashboard', [AdminController::class, 'adminDashboard'])->name('dashboard');
+
+    // Dashboard untuk Karyawan
+    Route::middleware('role:karyawan')->get('/dashboard-karyawan', [AdminController::class, 'adminDashboard'])->name('karyawan.dashboard');
+
+    // Data Transaksi
+    Route::resource('transaksi', TransaksiController::class, ['parameters' => ['transaksi' => 'id_transaksi']])->names('transaksi');
+    Route::get('/transaksi/export/excel', [TransaksiController::class, 'exportExcel'])->name('transaksi.export.excel');
+    Route::get('/transaksi/export/pdf', [TransaksiController::class, 'exportPdf'])->name('transaksi.export.pdf');
+    Route::get('/transaksi/{id}/print', [TransaksiController::class, 'print'])->name('transaksi.print');
+
+    // Pembayaran
+    Route::resource('pembayaran', PembayaranController::class, ['parameters' => ['pembayaran' => 'id_pembayaran']])->names('pembayaran');
+    Route::get('/pembayaran/{id}/print', [PembayaranController::class, 'print'])->name('pembayaran.print');
+
+    // Pengembalian
+    Route::resource('pengembalian', PengembalianController::class, ['parameters' => ['pengembalian' => 'id_pengembalian']])->only(['index', 'show', 'update'])->names('pengembalian');
+    Route::get('/pengembalian/{id}/print', [PengembalianController::class, 'print'])->name('pengembalian.print');
+});
+
+// Routes khusus untuk Administrator (Master Data)
+Route::middleware(['auth:web', 'role:administrator'])->prefix('admin')->group(function () {
     // Data Orang
     Route::resource('orang', OrangController::class, ['parameters' => ['orang' => 'id_orang']])->names('admin.orang');
     Route::get('/orang/export/excel', [OrangController::class, 'exportExcel'])->name('admin.orang.export.excel');
@@ -51,7 +81,7 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->group(functi
     Route::get('/role/export/pdf', [RoleController::class, 'exportPdf'])->name('admin.role.export.pdf');
 
     // Data Akun
-    Route::resource('akun', AkunController::class, ['parameters' => ['akun' => 'id_akuns']])->names('admin.akun');
+    Route::resource('akun', AkunController::class, ['parameters' => ['akun' => 'id_akun']])->names('admin.akun');
     Route::get('/akun/export/excel', [AkunController::class, 'exportExcel'])->name('admin.akun.export.excel');
     Route::get('/akun/export/pdf', [AkunController::class, 'exportPdf'])->name('admin.akun.export.pdf');
 
@@ -69,7 +99,8 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->group(functi
     Route::resource('tabung', TabungController::class, ['parameters' => ['tabung' => 'id_tabung']])->names('admin.tabung');
     Route::get('/tabung/export/excel', [TabungController::class, 'exportExcel'])->name('admin.tabung.export.excel');
     Route::get('/tabung/export/pdf', [TabungController::class, 'exportPdf'])->name('admin.tabung.export.pdf');
-    Route::get('/admin/tabung/{id}/history', [TabungController::class, 'history'])->name('admin.tabung.history'); 
+    Route::get('/tabung/{id}/history', [TabungController::class, 'history'])->name('admin.tabung.history');
+
     // Data Kepemilikan Tabung
     Route::resource('kepemilikan_tabung', KepemilikanTabungController::class, ['parameters' => ['kepemilikan_tabung' => 'id_kepemilikan']])->names('admin.kepemilikan_tabung');
     Route::get('/kepemilikan_tabung/export/excel', [KepemilikanTabungController::class, 'exportExcel'])->name('admin.kepemilikan_tabung.export.excel');
@@ -81,15 +112,7 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->group(functi
     Route::get('/jenis_transaksi/export/pdf', [JenisTransaksiController::class, 'exportPdf'])->name('admin.jenis_transaksi.export.pdf');
 });
 
-Route::middleware(['auth', 'role:administrator,karyawan,pelanggan'])->group(function () {
-    // Data Transaksi
-    Route::resource('transaksi', TransaksiController::class, ['parameters' => ['transaksi' => 'id_transaksi']])->names('transaksi');
-    Route::get('/transaksi/export/excel', [TransaksiController::class, 'exportExcel'])->name('transaksi.export.excel');
-    Route::get('/transaksi/export/pdf', [TransaksiController::class, 'exportPdf'])->name('transaksi.export.pdf');
-   
-    // Pembayaran
-    Route::resource('pembayaran', PembayaranController::class, ['parameters' => ['pembayaran' => 'id_pembayaran']])->only(['index', 'update', 'show'])->names('pembayaran');
-
-    // Pengembalian
-    Route::resource('pengembalian', PengembalianController::class, ['parameters' => ['pengembalian' => 'id_pengembalian']])->only(['index', 'show', 'update'])->names('pengembalian');
+// Routes untuk Pelanggan (hanya rute minimal tanpa halaman)
+Route::middleware(['auth:web', 'role:pelanggan'])->prefix('user')->group(function () {
+    Route::get('/home', fn () => abort(403, 'Halaman pelanggan tidak tersedia.'))->name('user.home');
 });

@@ -154,11 +154,13 @@
                                 <select name="transaksi_details[{{ $index }}][id_jenis_transaksi_detail]" class="form-control select2 jenis-transaksi" id="jenis-transaksi-{{ $index }}" data-index="{{ $index }}">
                                     <option value="">Pilih Jenis Transaksi</option>
                                     @foreach ($jenisTransaksis as $jenis)
-                                        <option value="{{ $jenis->id_jenis_transaksi_detail }}"
-                                                data-jenis="{{ $jenis->jenis_transaksi }}"
-                                                {{ old("transaksi_details.{$index}.id_jenis_transaksi_detail") == $jenis->id_jenis_transaksi_detail ? 'selected' : '' }}>
-                                            {{ $jenis->jenis_transaksi }}
-                                        </option>
+                                        @if (in_array(strtolower($jenis->jenis_transaksi), ['peminjaman', 'isi ulang']))
+                                            <option value="{{ $jenis->id_jenis_transaksi_detail }}"
+                                                    data-jenis="{{ $jenis->jenis_transaksi }}"
+                                                    {{ old("transaksi_details.{$index}.id_jenis_transaksi_detail") == $jenis->id_jenis_transaksi_detail ? 'selected' : '' }}>
+                                                {{ $jenis->jenis_transaksi }}
+                                            </option>
+                                        @endif
                                     @endforeach
                                 </select>
                                 @error("transaksi_details.{$index}.id_jenis_transaksi_detail")
@@ -480,7 +482,9 @@
                             <select name="transaksi_details[${detailCount}][id_jenis_transaksi_detail]" class="form-control select2 jenis-transaksi" id="jenis-transaksi-${detailCount}" data-index="${detailCount}">
                                 <option value="">Pilih Jenis Transaksi</option>
                                 @foreach ($jenisTransaksis as $jenis)
-                                    <option value="{{ $jenis->id_jenis_transaksi_detail }}" data-jenis="{{ $jenis->jenis_transaksi }}">{{ $jenis->jenis_transaksi }}</option>
+                                    @if (in_array(strtolower($jenis->jenis_transaksi), ['peminjaman', 'isi ulang']))
+                                        <option value="{{ $jenis->id_jenis_transaksi_detail }}" data-jenis="{{ $jenis->jenis_transaksi }}">{{ $jenis->jenis_transaksi }}</option>
+                                    @endif
                                 @endforeach
                             </select>
                         </div>

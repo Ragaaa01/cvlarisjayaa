@@ -42,7 +42,6 @@
         <img src="{{ asset('img/logolarisjaya.jpg') }}" alt="Logo Perusahaan">
         <h4 class="text-center mb-4">Silakan Masuk</h4>
 
-        <!-- Tampilkan pesan error atau sukses dari session -->
         @if (session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 {{ session('error') }}
@@ -56,7 +55,6 @@
             </div>
         @endif
 
-        <!-- Form Login -->
         <form method="POST" action="{{ route('login') }}">
             @csrf
             <div class="mb-3">
@@ -74,8 +72,7 @@
                 @enderror
             </div>
             <div class="mb-3 text-end">
-                <a href="#" class="text-decoration-none">Lupa Password?</a>
-                <!-- Pastikan rute 'forgot-password' sudah didefinisikan jika fitur ini diaktifkan -->
+                <a href="{{ route('password.request') }}" class="text-decoration-none">Lupa Password?</a>
             </div>
             <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>

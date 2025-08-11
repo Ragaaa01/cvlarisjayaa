@@ -32,11 +32,16 @@
             background-color: #001B36 !important;
             color: white !important;
         }
+        .button-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
     </style>
 @endsection
 
 @section('content')
-    <h1 class="h3 mb-4 text-gray-800">Detail Pengembalian</h1>
+    <h1 class="h3 mb-4 text-gray-800">Detail Pengembalian #{{ $pengembalian->id_pengembalian }}</h1>
     <div class="card shadow mb-4">
         <div class="card-body">
             @if (session('success'))
@@ -55,6 +60,14 @@
                     </button>
                 </div>
             @endif
+
+            <div class="button-container">
+                <a href="{{ route('pengembalian.index') }}" class="btn btn-custom mr-2">Kembali</a>
+                <a href="{{ route('pengembalian.print', $pengembalian->id_pengembalian) }}" class="btn btn-danger">
+                    <i class="fas fa-file-pdf mr-1"></i> Cetak PDF
+                </a>
+            </div>
+
             <div class="detail-container">
                 <h4>Informasi Pengembalian</h4>
                 <div class="row">
@@ -132,9 +145,6 @@
                 <div class="row">
                     <div class="col-md-3 label">Status Tabung</div>
                     <div class="col-md-9 value">{{ $pengembalian->statusTabung ? $pengembalian->statusTabung->status_tabung : '-' }}</div>
-                </div>
-                <div class="mt-3">
-                    <a href="{{ route('pengembalian.index') }}" class="btn btn-custom">Kembali</a>
                 </div>
             </div>
         </div>
