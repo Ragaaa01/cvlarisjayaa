@@ -12,23 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('notifikasis', function (Blueprint $table) {
-            $table->id('id_notifikasi');
-
-            // Foreign key ke tabel akuns
-            $table->foreignId('id_akun')->constrained('akuns', 'id_akun')->onDelete('cascade');
-
-            // Foreign key ke tabel notifikasi_templates
-            $table->foreignId('id_template')->constrained('notifikasi_templates', 'id_notifikasi_template');
-            $table->string('judul')->after('id_template')->nullable();
-            // Tambahkan kolom 'isi' setelah 'judul'
-            $table->text('isi')->after('judul')->nullable();
-
-            $table->timestamp('tanggal_terjadwal');
-            $table->boolean('status_baca')->default(false);
-            $table->timestamp('waktu_dikirim')->nullable();
-
-            $table->timestamps();
-        });
+    $table->id('id_notifikasi');
+    $table->unsignedBigInteger('id_akun');
+    $table->unsignedBigInteger('id_template');
+    $table->string('judul')->nullable(); // Hapus ->after('id_template')
+    $table->text('isi')->nullable();     // Hapus ->after('judul')
+    $table->timestamp('tanggal_terjadwal');
+    $table->boolean('status_baca')->default(0);
+    $table->timestamp('waktu_dikirim')->nullable();
+    $table->timestamps();
+});
     }
 
     /**

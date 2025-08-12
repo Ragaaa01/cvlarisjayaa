@@ -26,9 +26,18 @@ class TransaksiController extends Controller
     {
         try {
             if ($request->ajax()) {
-                $query = Transaksi::with(['orang']);
+                $query = Transaksi::with(['orang', 'transaksiDetails.jenisTransaksiDetail']);
 
-                // Apply filters
+                // Filter berdasarkan jenis transaksi
+                if ($request->has('jenis_transaksi') && $request->jenis_transaksi !== 'all') {
+                    $query->whereHas('transaksiDetails', function ($q) use ($request) {
+                        $q->whereHas('jenisTransaksiDetail', function ($q2) use ($request) {
+                            $q2->where('jenis_transaksi', $request->jenis_transaksi);
+                        });
+                    });
+                }
+
+                // Filter berdasarkan waktu
                 if ($request->filter_type === 'specific_date' && $request->specific_date) {
                     $query->whereDate('tanggal_transaksi', $request->specific_date);
                 } elseif ($request->filter_type === 'date_range' && $request->start_date && $request->end_date) {
@@ -38,10 +47,11 @@ class TransaksiController extends Controller
                           ->whereMonth('tanggal_transaksi', substr($request->month, 5, 2));
                 } elseif ($request->filter_type === 'belum_lunas') {
                     $query->where(function ($q) {
-                        $q->whereDoesntHave('pembayaran')
-                          ->orWhereHas('pembayaran', function ($q2) {
-                              $q2->whereRaw('jumlah_pembayaran < total_transaksi');
-                          });
+                        $q->whereDoesntHave('pembayarans', function ($q2) {
+                            $q2->whereRaw('pembayarans.jumlah_pembayaran >= pembayarans.total_transaksi');
+                        })->orWhereHas('pembayarans', function ($q2) {
+                            $q2->whereRaw('pembayarans.jumlah_pembayaran < pembayarans.total_transaksi');
+                        });
                     });
                 }
 
@@ -56,14 +66,13 @@ class TransaksiController extends Controller
                     ->addColumn('status_pembayaran', function ($transaksi) {
                         $pembayaran = Pembayaran::where('id_orang', $transaksi->id_orang)
                             ->where('total_transaksi', $transaksi->total_transaksi)
-                            ->where('tanggal_pembayaran', '>=', $transaksi->tanggal_transaksi)
                             ->orderBy('tanggal_pembayaran', 'desc')
                             ->orderBy('waktu_pembayaran', 'desc')
                             ->first();
                         if ($pembayaran) {
                             if ($pembayaran->jumlah_pembayaran >= $pembayaran->total_transaksi) {
                                 return 'Lunas';
-                            } elseif ($pembayaran->jumlah_pembayaran > 0 || $pembayaran->metode_pembayaran !== 'Belum Dibayar') {
+                            } elseif ($pembayaran->jumlah_pembayaran > 0 && $pembayaran->metode_pembayaran !== 'Belum Dibayar') {
                                 return 'Belum Lunas';
                             }
                         }
@@ -72,7 +81,6 @@ class TransaksiController extends Controller
                     ->addColumn('action', function ($transaksi) {
                         $pembayaran = Pembayaran::where('id_orang', $transaksi->id_orang)
                             ->where('total_transaksi', $transaksi->total_transaksi)
-                            ->where('tanggal_pembayaran', '>=', $transaksi->tanggal_transaksi)
                             ->orderBy('tanggal_pembayaran', 'desc')
                             ->orderBy('waktu_pembayaran', 'desc')
                             ->first();
@@ -258,7 +266,7 @@ class TransaksiController extends Controller
         }
     }
 
-     public function show($id_transaksi)
+    public function show($id_transaksi)
     {
         try {
             $transaksi = Transaksi::with(['orang', 'transaksiDetails', 'transaksiDetails.tabung', 'transaksiDetails.tabung.jenisTabung', 'transaksiDetails.jenisTransaksiDetail'])
@@ -266,7 +274,6 @@ class TransaksiController extends Controller
             
             $pembayaran = Pembayaran::where('id_orang', $transaksi->id_orang)
                 ->where('total_transaksi', $transaksi->total_transaksi)
-                ->where('tanggal_pembayaran', '>=', $transaksi->tanggal_transaksi)
                 ->orderBy('tanggal_pembayaran', 'desc')
                 ->orderBy('waktu_pembayaran', 'desc')
                 ->first();
@@ -284,7 +291,6 @@ class TransaksiController extends Controller
         }
     }
 
-
     public function print($id)
     {
         try {
@@ -300,7 +306,7 @@ class TransaksiController extends Controller
     public function exportExcel(Request $request)
     {
         try {
-            $query = Transaksi::with(['orang', 'transaksiDetails']);
+            $query = Transaksi::with(['orang', 'transaksiDetails.jenisTransaksiDetail']);
             
             if ($request->has('filter_type') && !empty($request->filter_type)) {
                 if ($request->filter_type === 'specific_date' && $request->has('specific_date') && !empty($request->specific_date)) {
@@ -316,16 +322,23 @@ class TransaksiController extends Controller
                         Log::warning('Format bulan tidak valid untuk export Excel: ' . $request->month);
                     }
                 } elseif ($request->filter_type === 'belum_lunas') {
-                    $query->leftJoin('pembayarans', function ($join) {
-                        $join->on('pembayarans.id_orang', '=', 'transaksis.id_orang')
-                             ->on('pembayarans.total_transaksi', '=', 'transaksis.total_transaksi');
-                    })
-                    ->where(function ($q) {
-                        $q->whereNull('pembayarans.id_pembayaran')
-                          ->orWhere('pembayarans.metode_pembayaran', 'Belum Dibayar')
-                          ->orWhereRaw('COALESCE(pembayarans.jumlah_pembayaran, 0) < transaksis.total_transaksi');
-                    })->select('transaksis.*');
+                    $query->where(function ($q) {
+                        $q->whereDoesntHave('pembayarans', function ($q2) {
+                            $q2->whereRaw('pembayarans.jumlah_pembayaran >= pembayarans.total_transaksi');
+                        })->orWhereHas('pembayarans', function ($q2) {
+                            $q2->whereRaw('pembayarans.jumlah_pembayaran < pembayarans.total_transaksi');
+                        });
+                    });
                 }
+            }
+
+            // Filter berdasarkan jenis transaksi
+            if ($request->has('jenis_transaksi') && $request->jenis_transaksi !== 'all') {
+                $query->whereHas('transaksiDetails', function ($q) use ($request) {
+                    $q->whereHas('jenisTransaksiDetail', function ($q2) use ($request) {
+                        $q2->where('jenis_transaksi', $request->jenis_transaksi);
+                    });
+                });
             }
 
             $transaksis = $query->get();
@@ -377,7 +390,7 @@ class TransaksiController extends Controller
     public function exportPdf(Request $request)
     {
         try {
-            $query = Transaksi::with(['orang', 'transaksiDetails']);
+            $query = Transaksi::with(['orang', 'transaksiDetails.jenisTransaksiDetail']);
             
             if ($request->has('filter_type') && !empty($request->filter_type)) {
                 if ($request->filter_type === 'specific_date' && $request->has('specific_date') && !empty($request->specific_date)) {
@@ -393,16 +406,23 @@ class TransaksiController extends Controller
                         Log::warning('Format bulan tidak valid untuk export PDF: ' . $request->month);
                     }
                 } elseif ($request->filter_type === 'belum_lunas') {
-                    $query->leftJoin('pembayarans', function ($join) {
-                        $join->on('pembayarans.id_orang', '=', 'transaksis.id_orang')
-                             ->on('pembayarans.total_transaksi', '=', 'transaksis.total_transaksi');
-                    })
-                    ->where(function ($q) {
-                        $q->whereNull('pembayarans.id_pembayaran')
-                          ->orWhere('pembayarans.metode_pembayaran', 'Belum Dibayar')
-                          ->orWhereRaw('COALESCE(pembayarans.jumlah_pembayaran, 0) < transaksis.total_transaksi');
-                    })->select('transaksis.*');
+                    $query->where(function ($q) {
+                        $q->whereDoesntHave('pembayarans', function ($q2) {
+                            $q2->whereRaw('pembayarans.jumlah_pembayaran >= pembayarans.total_transaksi');
+                        })->orWhereHas('pembayarans', function ($q2) {
+                            $q2->whereRaw('pembayarans.jumlah_pembayaran < pembayarans.total_transaksi');
+                        });
+                    });
                 }
+            }
+
+            // Filter berdasarkan jenis transaksi
+            if ($request->has('jenis_transaksi') && $request->jenis_transaksi !== 'all') {
+                $query->whereHas('transaksiDetails', function ($q) use ($request) {
+                    $q->whereHas('jenisTransaksiDetail', function ($q2) use ($request) {
+                        $q2->where('jenis_transaksi', $request->jenis_transaksi);
+                    });
+                });
             }
 
             $transaksis = $query->get();

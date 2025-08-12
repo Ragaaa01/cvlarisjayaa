@@ -182,10 +182,10 @@
             </a>
         </div>
         <div>
-            <a href="{{ route('transaksi.export.excel') }}?filter_type={{ request('filter_type') }}&specific_date={{ request('specific_date') }}&start_date={{ request('start_date') }}&end_date={{ request('end_date') }}&month={{ request('month') }}" class="btn btn-success">
+            <a href="{{ route('transaksi.export.excel') }}?filter_type={{ request('filter_type') }}&specific_date={{ request('specific_date') }}&start_date={{ request('start_date') }}&end_date={{ request('end_date') }}&month={{ request('month') }}&jenis_transaksi={{ request('jenis_transaksi') }}" class="btn btn-success">
                 <i class="fas fa-file-excel mr-1"></i> Export Excel
             </a>
-            <a href="{{ route('transaksi.export.pdf') }}?filter_type={{ request('filter_type') }}&specific_date={{ request('specific_date') }}&start_date={{ request('start_date') }}&end_date={{ request('end_date') }}&month={{ request('month') }}" class="btn btn-danger">
+            <a href="{{ route('transaksi.export.pdf') }}?filter_type={{ request('filter_type') }}&specific_date={{ request('specific_date') }}&start_date={{ request('start_date') }}&end_date={{ request('end_date') }}&month={{ request('month') }}&jenis_transaksi={{ request('jenis_transaksi') }}" class="btn btn-danger">
                 <i class="fas fa-file-pdf mr-1"></i> Export PDF
             </a>
         </div>
@@ -208,13 +208,19 @@
             </div>
         @endif
         <div class="filter-container">
-            <label for="filter_type">Filter:</label>
+            <label for="filter_type">Filter Waktu:</label>
             <select class="form-control d-inline-block" id="filter_type" name="filter_type">
                 <option value="all" {{ request('filter_type') == 'all' || empty(request('filter_type')) ? 'selected' : '' }}>Semua Data</option>
                 <option value="specific_date" {{ request('filter_type') == 'specific_date' ? 'selected' : '' }}>Pilih Tanggal</option>
                 <option value="date_range" {{ request('filter_type') == 'date_range' ? 'selected' : '' }}>Pilih Rentang Waktu</option>
                 <option value="month" {{ request('filter_type') == 'month' ? 'selected' : '' }}>Pilih Bulan</option>
                 <option value="belum_lunas" {{ request('filter_type') == 'belum_lunas' ? 'selected' : '' }}>Belum Lunas</option>
+            </select>
+            <label for="jenis_transaksi">Jenis Transaksi:</label>
+            <select class="form-control d-inline-block" id="jenis_transaksi" name="jenis_transaksi">
+                <option value="all" {{ request('jenis_transaksi') == 'all' || empty(request('jenis_transaksi')) ? 'selected' : '' }}>Semua Jenis</option>
+                <option value="peminjaman" {{ request('jenis_transaksi') == 'peminjaman' ? 'selected' : '' }}>Peminjaman</option>
+                <option value="isi ulang" {{ request('jenis_transaksi') == 'isi ulang' ? 'selected' : '' }}>Isi Ulang</option>
             </select>
             <div class="filter-inputs" id="specific_date_input">
                 <label for="specific_date">Tanggal:</label>
@@ -304,7 +310,7 @@
                                 <input type="number" name="jumlah_pembayaran" id="modal_jumlah_pembayaran" class="form-control" step="0.01" required>
                                 @error('jumlah_pembayaran')
                                     <span class="text-danger">{{ $message }}</span>
-                                @endif
+                                @enderror
                             </div>
                             <div class="form-group">
                                 <label for="modal_metode_pembayaran">Metode Pembayaran</label>
@@ -315,7 +321,7 @@
                                 </select>
                                 @error('metode_pembayaran')
                                     <span class="text-danger">{{ $message }}</span>
-                                @endif
+                                @enderror
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -347,6 +353,7 @@
                         d.start_date = $('#start_date').val();
                         d.end_date = $('#end_date').val();
                         d.month = $('#month_select').val();
+                        d.jenis_transaksi = $('#jenis_transaksi').val();
                     }
                 },
                 columns: [
@@ -471,7 +478,7 @@
                 }
             }
 
-            $('#filter_type').on('change', function() {
+            $('#filter_type, #jenis_transaksi').on('change', function() {
                 toggleFilterInputs();
                 table.ajax.reload();
             });
