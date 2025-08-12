@@ -60,7 +60,7 @@ class AdminController extends Controller
             ));
         } catch (\Exception $e) {
             Log::error('Gagal memuat data dashboard: ' . $e->getMessage());
-            return view('Admin.pages.index')->with('error', 'Gagal memuat data dashboard. Silakan coba lagi.');
+            return view('admin.pages.index')->with('error', 'Gagal memuat data dashboard. Silakan coba lagi.');
         }
     }
 }
