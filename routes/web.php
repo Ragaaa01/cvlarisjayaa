@@ -20,6 +20,14 @@ use App\Http\Controllers\Web\PembayaranController;
 use App\Http\Controllers\Web\ForgotPasswordController;
 use App\Http\Controllers\Web\ResetPasswordController;
 
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/run-migrate', function () {
+    Artisan::call('migrate', ['--force' => true]);
+    return 'Migration berhasil dijalankan di Railway';
+});
+
+
 Route::get('/', fn () => view('welcome'))->name('welcome');
 
 Route::controller(AuthController::class)->group(function () {
