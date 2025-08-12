@@ -23,15 +23,15 @@ use App\Http\Controllers\Web\ResetPasswordController;
 use Illuminate\Support\Facades\Artisan;
 
 
-Route::get('/run-migrate', function () {
-    try {
-        Artisan::call('migrate', ['--force' => true]);
-        Artisan::call('db:seed', ['--force' => true]);
-        return 'Migration dan seeding berhasil dijalankan di Railway.';
-    } catch (\Exception $e) {
-        return 'Terjadi kesalahan: ' . $e->getMessage();
-    }
-});
+// Route::get('/run-migrate', function () {
+//     try {
+//         Artisan::call('migrate', ['--force' => true]);
+//         Artisan::call('db:seed', ['--force' => true]);
+//         return 'Migration dan seeding berhasil dijalankan di Railway.';
+//     } catch (\Exception $e) {
+//         return 'Terjadi kesalahan: ' . $e->getMessage();
+//     }
+// });
 
 
 
